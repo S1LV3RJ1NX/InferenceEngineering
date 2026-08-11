@@ -1,4 +1,4 @@
-# BLOG_RULES.md — how to write a blog in the Inference Engineering series
+# BLOG_RULES.md: how to write a blog in the Inference Engineering series
 
 This is the reusable recipe for every post in `blogs/`. Drop the next video's transcript
 beside it, follow this spec, and the output will match the rest of the series in structure,
@@ -13,24 +13,24 @@ math style, figures, and code. The goal of each post: take a reader from
 
 ## 1. The 4-part spine (every post, in this order)
 
-1. **The intuition** — explain the idea in plain language first, with one AI hero illustration
+1. **The intuition.** Explain the idea in plain language first, with one AI hero illustration
    and a Mermaid diagram where a flow or a stack helps. No equations before the reader has a
    mental picture. Open with a concrete puzzle (a number that does not add up) and carry it
    through the post.
-2. **The math you need — with the numbers next to each idea.** The key relationships in good
+2. **The math you need, with the numbers next to each idea.** The key relationships in good
    LaTeX, one clean derivation, every symbol defined on first use. **Put the worked number
    immediately after the formula**, not batched at the end. Inference is a quantitative
    discipline: a formula without a plugged-in number teaches nothing.
 3. **Worked examples inline.** Concretise every important formula against a real chip and a
    real model (the series standard is an NVIDIA H100 and Llama-3-70B, so numbers stay
    comparable across posts). Add a code-generated figure when the numbers tell a story.
-4. **Putting it all together — a recap table.** Close with a short
+4. **Putting it all together: a recap table.** Close with a short
    `Concept → Formula → Number` table summarising the pieces already shown inline.
 
 Close with a short **"Where this goes next"** that sets up the following post and **ends with a
 markdown link to it by its `shortName`**.
 
-### 1a. Depth rule — expand the new, recall-and-link the old
+### 1a. Depth rule: expand the new, recall-and-link the old
 
 Transcripts are spoken and terse. **Expand every one-liner about a _new_ idea into a full
 explanation:** state it, give the intuition, work the *why*. No new term is used before it is
@@ -123,13 +123,36 @@ filter** and must be the first tag on every post.
   meaning: what the result means and what moves when something changes.
 - **Every formula gets a number.** Plug in the H100 and Llama-3-70B values immediately.
 - Keep equations small and frequent rather than one giant block.
-- Standard notation for this series. Hardware: $B$ bandwidth (bytes/s), $C$ peak compute
-  (FLOP/s), $I$ arithmetic intensity (ops/byte), $I_{\text{ridge}} = C/B$, $W$ weight bytes,
-  $N$ parameter count. Model geometry follows the convention used in
-  [My Adventures with Large Language Models](https://leanpub.com/adventures-with-llms) so the
-  two line up: $l$ transformer blocks, $b$ batch size, $n$ key-value heads, $h$ head dimension,
-  $s$ context length in tokens.
-- Note $b$ is **batch size**, never bytes. Write bytes per weight or bytes per number in words.
+### Notation
+
+| Symbol | Meaning | Units |
+| --- | --- | --- |
+| $C$ | peak compute throughput | FLOP/s |
+| $B$ | memory bandwidth | bytes/s |
+| $I$ | arithmetic intensity | ops/byte |
+| $I_{\text{ridge}}$ | ridge point, $C/B$ | ops/byte |
+| $W$ | weight footprint | bytes |
+| $N$ | parameter count | count |
+| $l$ | transformer blocks | count |
+| $n$ | key-value heads | count |
+| $h$ | head dimension | count |
+| $s$ | context length | tokens |
+
+Three conventions worth stating, because the obvious choices collide:
+
+- **Bytes never get a symbol.** Write "2 bytes per weight" or name the precision (fp16, fp8).
+  There is no standard letter for it in either the ML or the HPC literature, and inventing one
+  costs the reader more than it saves.
+- **$B$ is bandwidth, and batch size stays out of display math.** In ML papers $B$ is almost
+  always batch size, while the roofline literature this series builds on uses $\beta$ for
+  bandwidth and $\pi$ for peak compute. We keep the plain-ASCII $B$ for bandwidth because it
+  appears in nearly every formula here, and we express batch in words ("per request", "multiply
+  by the number of concurrent requests"). A $b$ sitting next to a $B$ differs only by case and
+  is misread at body-text size.
+- **Model geometry follows [My Adventures with Large Language Models](https://leanpub.com/adventures-with-llms)**
+  ($l$, $n$, $h$, $s$) so the blog and the book agree arithmetically. Where the book's letters
+  would collide with a hardware symbol here, prefer the clearer local choice: the arithmetic has
+  to match, the alphabet does not.
 
 ### Units
 
@@ -142,11 +165,11 @@ Be explicit and consistent. Use `FLOP/s` for a rate and `FLOPs` for a count. Wri
 
 Two kinds of images, two clear jobs. **Default to SVG.**
 
-- **`ai-*.png` — conceptual illustrations** (AI-generated). Hero and "feel" images with **no
+- **`ai-*.png`, conceptual illustrations** (AI-generated). Hero and "feel" images with **no
   numbers or precise labels** (generators garble text). Prompt for the house palette: paper
   `#FAFAFA`, near-black `#0A0A0A` line work, terracotta `#C8421A` accent, teal `#1F7A8C`
   secondary. Flat editorial, lots of negative space, explicitly "no text or letters."
-- **`fig-*.svg` — anything with numbers, axes, or math** (code-generated by
+- **`fig-*.svg`, anything with numbers, axes, or math** (code-generated by
   `blogs/assets/figures.py`).
 - **Mermaid** for flows, stacks, and decision trees, as a ```mermaid code block.
 - Reference images with **relative paths**: `![alt](./images/fig-foo.svg)`.

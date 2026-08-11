@@ -258,15 +258,17 @@ So we save them instead. Every time a token passes through a layer, the key and 
 
 This is an obvious optimization once you see it, and every modern serving system implements it. It is the reason decode is tractable at all. It is also, as we are about to see, the reason most of the remaining optimizations in this series exist.
 
-How big does that region get? The cache holds a key vector and a value vector per token, in every layer, for every request being served at once:
+How big does that region get? The cache holds a key vector and a value vector per token, in every layer, for one conversation:
 
-$$\text{KV cache bytes} = l \times b \times n \times h \times s \times 2 \times 2$$
+$$\text{KV cache bytes} = l \times n \times h \times s \times 2 \times 2$$
 
-Read it term by term: $l$ is the number of transformer blocks, $b$ is the batch size (how many requests share the machine), $n$ is the number of key-value heads, $h$ is the size of each head, $s$ is the context length in tokens, the first 2 counts the two caches per block (one for keys, one for values), and the second 2 is the bytes per number at 16-bit precision. Interpreting it: the cache grows linearly in every one of those factors at once, and nothing in the expression saturates or tails off. Double the layers and it doubles. Double the conversation length and it doubles. Double the number of concurrent users and it doubles again.
+Read it term by term: $l$ is the number of transformer blocks, $n$ is the number of key-value heads, $h$ is the size of each head, $s$ is the context length in tokens, the first 2 counts the two caches per block (one for keys, one for values), and the second 2 is the bytes per number at 16-bit precision. Interpreting it: the cache grows linearly in every one of those factors at once, and nothing in the expression saturates or tails off. Double the layers and it doubles. Double the conversation length and it doubles.
+
+That is the bill for a single request. A server holding many conversations at once pays it for every one of them, so multiply by the number of concurrent requests to size a real machine. Everything below stays with one conversation, because that is what a single user feels.
 
 One term deserves a warning, because it is where a first estimate usually goes wrong. **$n$ is the number of key-value heads, not the number of query heads.** In classic multi-head attention those are the same number, but modern models deliberately decouple them. Llama-3-70B has 64 query heads and only 8 key-value heads, so eight query heads share each cached key and value. That one design choice, grouped-query attention, divides this entire formula by eight.
 
-Now put Llama-3-70B in and ask what a single token of a single conversation costs. Set $b = 1$ and $s = 1$, and build it up one factor at a time:
+Now put Llama-3-70B in and ask what a single token costs. Set $s = 1$ and build it up one factor at a time:
 
 - 8 key-value heads of 128 dimensions gives $8 \times 128 = 1{,}024$ numbers for that token's keys in one layer
 - keys and values together doubles it to $2{,}048$ numbers
@@ -283,7 +285,7 @@ So one token costs **320 KB**, and because $s$ enters the formula linearly, a co
 
 Every token of conversation costs 320 KB of permanent HBM residency, and at 100,000 tokens the cache has grown to 33 GB.
 
-It is worth seeing what that number looks like without grouped-query attention, because it explains why the technique exists. Take a model with 61 blocks and 128 heads of size 128, and let it cache all 128 heads at a context of 100,000 tokens. The same formula gives $61 \times 1 \times 128 \times 128 \times 100{,}000 \times 2 \times 2$, which is over **400 GB** for a single conversation, comfortably more than the weights of most models you would want to run. Nobody ships that. The cache-shrinking techniques are not optimizations bolted on afterward, they are what makes long context possible at all.
+It is worth seeing what that number looks like without grouped-query attention, because it explains why the technique exists. Take a model with 61 blocks and 128 heads of size 128, and let it cache all 128 heads at a context of 100,000 tokens. The same formula gives $61 \times 128 \times 128 \times 100{,}000 \times 2 \times 2$, which is over **400 GB** for a single conversation, comfortably more than the weights of most models you would want to run. Nobody ships that. The cache-shrinking techniques are not optimizations bolted on afterward, they are what makes long context possible at all.
 
 ![Log-log chart of KV cache size against conversation length, rising linearly from 0.33 GB at 1,000 tokens to 33 GB at 100,000 tokens, with a dashed reference line at the model's 141 GB weight footprint](./images/fig-kv-cache-growth.svg)
 
@@ -356,7 +358,7 @@ Every number in this post came from two hardware specs and one model. Here is th
 | Ridge point          | $I_{\text{ridge}} = C / B$               | 295 ops/byte                   |
 | Prefill verdict      | $I > I_{\text{ridge}}$                   | 6.7x above, compute-bound      |
 | Decode verdict       | $I < I_{\text{ridge}}$                   | 295x below, memory-bound       |
-| KV cache             | $l \times b \times n \times h \times s \times 2 \times 2$ | 320 KB per token   |
+| KV cache             | $l \times n \times h \times s \times 2 \times 2$ | 320 KB per token         |
 | Decode ceiling       | $B / (W + s \cdot k_{\text{token}})$     | 23.9 tok/s empty, 18.4 at 128K |
 
 Read the table top to bottom and the opening puzzle dissolves. A modern accelerator's compute has outgrown its bandwidth by a factor that keeps widening. A transformer streams all of its weights from HBM once per forward pass. Prefill shares that transfer across thousands of tokens and lands on the compute ceiling. Decode shares it with nothing and lands 295 times down the bandwidth ceiling. The KV cache, which is the only reason decode is tractable at all, sits in the same memory and adds to the same bill. TTFT and TPOT are what the user feels, and goodput is what the operator optimizes.
