@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="629.017279pt" height="262.841pt" viewBox="0 0 629.017279 262.841" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-08-10T11:05:33.248768</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 262.841 
+L 629.017279 262.841 
+L 629.017279 0 
+L 0 0 
+z
+" style="fill: #fafafa"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 114.740938 215.346 
+L 594.620937 215.346 
+L 594.620937 26.85 
+L 114.740938 26.85 
+z
+" style="fill: #fafafa"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <path d="M 114.740938 215.346 
+L 114.740938 26.85 
+" clip-path="url(#pc5c2648f23)" style="fill: none; stroke: #e5e5e5; stroke-width: 0.8; stroke-linecap: round"/>
+     </g>
+     <g id="text_1">
+      <!-- $\mathdefault{10^{1}}$ -->
+      <g style="fill: #525252" transform="translate(106.270938 235.318)">
+       <text>
+        <tspan x="0" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">1</tspan>
+        <tspan x="6.115952" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">0</tspan>
+        <tspan x="12.337177" y="-5.542188" style="font-size: 7.7px; font-family: 'Helvetica Neue'; fill: #525252">1</tspan>
+       </text>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <path d="M 209.220732 215.346 
+L 209.220732 26.85 
+" clip-path="url(#pc5c2648f23)" style="fill: none; stroke: #e5e5e5; stroke-width: 0.8; stroke-linecap: round"/>
+     </g>
+     <g id="text_2">
+      <!-- $\mathdefault{10^{2}}$ -->
+      <g style="fill: #525252" transform="translate(200.750732 235.318)">
+       <text>
+        <tspan x="0" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">1</tspan>
+        <tspan x="6.115952" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">0</tspan>
+        <tspan x="12.337177" y="-5.542188" style="font-size: 7.7px; font-family: 'Helvetica Neue'; fill: #525252">2</tspan>
+       </text>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <path d="M 303.700526 215.346 
+L 303.700526 26.85 
+" clip-path="url(#pc5c2648f23)" style="fill: none; stroke: #e5e5e5; stroke-width: 0.8; stroke-linecap: round"/>
+     </g>
+     <g id="text_3">
+      <!-- $\mathdefault{10^{3}}$ -->
+      <g style="fill: #525252" transform="translate(295.230526 235.318)">
+       <text>
+        <tspan x="0" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">1</tspan>
+        <tspan x="6.115952" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">0</tspan>
+        <tspan x="12.337177" y="-5.542188" style="font-size: 7.7px; font-family: 'Helvetica Neue'; fill: #525252">3</tspan>
+       </text>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <path d="M 398.180321 215.346 
+L 398.180321 26.85 
+" clip-path="url(#pc5c2648f23)" style="fill: none; stroke: #e5e5e5; stroke-width: 0.8; stroke-linecap: round"/>
+     </g>
+     <g id="text_4">
+      <!-- $\mathdefault{10^{4}}$ -->
+      <g style="fill: #525252" transform="translate(389.710321 235.318)">
+       <text>
+        <tspan x="0" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">1</tspan>
+        <tspan x="6.115952" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">0</tspan>
+        <tspan x="12.337177" y="-5.542188" style="font-size: 7.7px; font-family: 'Helvetica Neue'; fill: #525252">4</tspan>
+       </text>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5">
+      <path d="M 492.660115 215.346 
+L 492.660115 26.85 
+" clip-path="url(#pc5c2648f23)" style="fill: none; stroke: #e5e5e5; stroke-width: 0.8; stroke-linecap: round"/>
+     </g>
+     <g id="text_5">
+      <!-- $\mathdefault{10^{5}}$ -->
+      <g style="fill: #525252" transform="translate(484.190115 235.318)">
+       <text>
+        <tspan x="0" y="-0.086688" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">1</tspan>
+        <tspan x="6.115952" y="-0.086688" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">0</tspan>
+        <tspan x="12.337177" y="-4.629688" style="font-size: 7.7px; font-family: 'Helvetica Neue'; fill: #525252">5</tspan>
+       </text>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6">
+      <path d="M 587.13991 215.346 
+L 587.13991 26.85 
+" clip-path="url(#pc5c2648f23)" style="fill: none; stroke: #e5e5e5; stroke-width: 0.8; stroke-linecap: round"/>
+     </g>
+     <g id="text_6">
+      <!-- $\mathdefault{10^{6}}$ -->
+      <g style="fill: #525252" transform="translate(578.66991 235.318)">
+       <text>
+        <tspan x="0" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">1</tspan>
+        <tspan x="6.115952" y="-0.999188" style="font-size: 11px; font-family: 'Helvetica Neue'; fill: #525252">0</tspan>
+        <tspan x="12.337177" y="-5.542188" style="font-size: 7.7px; font-family: 'Helvetica Neue'; fill: #525252">6</tspan>
+       </text>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_7"/>
+    <g id="xtick_8"/>
+    <g id="xtick_9"/>
+    <g id="xtick_10"/>
+    <g id="xtick_11"/>
+    <g id="xtick_12"/>
+    <g id="xtick_13"/>
+    <g id="xtick_14"/>
+    <g id="xtick_15"/>
+    <g id="xtick_16"/>
+    <g id="xtick_17"/>
+    <g id="xtick_18"/>
+    <g id="xtick_19"/>
+    <g id="xtick_20"/>
+    <g id="xtick_21"/>
+    <g id="xtick_22"/>
+    <g id="xtick_23"/>
+    <g id="xtick_24"/>
+    <g id="xtick_25"/>
+    <g id="xtick_26"/>
+    <g id="xtick_27"/>
+    <g id="xtick_28"/>
+    <g id="xtick_29"/>
+    <g id="xtick_30"/>
+    <g id="xtick_31"/>
+    <g id="xtick_32"/>
+    <g id="xtick_33"/>
+    <g id="xtick_34"/>
+    <g id="xtick_35"/>
+    <g id="xtick_36"/>
+    <g id="xtick_37"/>
+    <g id="xtick_38"/>
+    <g id="xtick_39"/>
+    <g id="xtick_40"/>
+    <g id="xtick_41"/>
+    <g id="xtick_42"/>
+    <g id="xtick_43"/>
+    <g id="xtick_44"/>
+    <g id="xtick_45"/>
+    <g id="xtick_46"/>
+    <g id="text_7">
+     <text style="font-size: 12px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #0a0a0a" x="354.680938" y="253.085" transform="rotate(-0 354.680938 253.085)">weight bytes paid per token of output  (log scale)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="text_8">
+      <text style="font-size: 11px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; fill: #525252" transform="translate(78.158594 175.126919)">Prefill</text>
+      <text style="font-size: 11px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; fill: #525252" transform="translate(7.2 188.249919)">2,000-token prompt</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="text_9">
+      <text style="font-size: 11px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; fill: #525252" transform="translate(66.936875 64.572081)">Decode</text>
+      <text style="font-size: 11px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; fill: #525252" transform="translate(10.683906 77.695081)">one token at a time</text>
+     </g>
+    </g>
+   </g>
+   <g id="patch_3">
+    <path d="M -94459.533287 206.778 
+L 194.585627 206.778 
+L 194.585627 145.972839 
+L -94459.533287 145.972839 
+z
+" clip-path="url(#pc5c2648f23)" style="fill: #c8421a; opacity: 0.9; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M -94459.533287 96.223161 
+L 506.466262 96.223161 
+L 506.466262 35.418 
+L -94459.533287 35.418 
+z
+" clip-path="url(#pc5c2648f23)" style="fill: #1f7a8c; opacity: 0.9; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 114.740938 215.346 
+L 114.740938 26.85 
+" style="fill: none; stroke: #e5e5e5; stroke-width: 1.25; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 114.740938 215.346 
+L 594.620938 215.346 
+" style="fill: none; stroke: #e5e5e5; stroke-width: 1.25; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_10">
+    <text style="font-weight: 700; font-size: 12.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #0a0a0a" x="206.899534" y="181.112919" transform="rotate(-0 206.899534 181.112919)">70 MB per token</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 12.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #0a0a0a" x="518.78017" y="70.558081" transform="rotate(-0 518.78017 70.558081)">140 GB per token</text>
+   </g>
+   <g id="patch_7">
+    <path d="M 198.15438 121.098 
+Q 350.527651 121.098 502.900922 121.098 
+" style="fill: none; stroke: #525252; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 202.95438 123.498 
+L 198.15438 121.098 
+L 202.95438 118.698 
+" style="fill: none; stroke: #525252; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 498.100922 118.698 
+L 502.900922 121.098 
+L 498.100922 123.498 
+" style="fill: none; stroke: #525252; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 13px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #0a0a0a" x="348.778844" y="113.302032" transform="rotate(-0 348.778844 113.302032)">2,000x</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 14px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #0a0a0a" x="354.680938" y="20.85" transform="rotate(-0 354.680938 20.85)">Same transfer, different number of tokens to share it</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pc5c2648f23">
+   <rect x="114.740938" y="26.85" width="479.88" height="188.496"/>
+  </clipPath>
+ </defs>
+</svg>
