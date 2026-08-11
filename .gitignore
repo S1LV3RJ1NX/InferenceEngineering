@@ -1,4 +1,5 @@
 reference/
+transcripts/
 .venv/
 __pycache__/
 *.pyc
