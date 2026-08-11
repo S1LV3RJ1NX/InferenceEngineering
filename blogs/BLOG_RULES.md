@@ -123,9 +123,13 @@ filter** and must be the first tag on every post.
   meaning: what the result means and what moves when something changes.
 - **Every formula gets a number.** Plug in the H100 and Llama-3-70B values immediately.
 - Keep equations small and frequent rather than one giant block.
-- Standard notation for this series: $B$ bandwidth (bytes/s), $C$ peak compute (FLOP/s),
-  $I$ arithmetic intensity (ops/byte), $I_{\text{ridge}} = C/B$, $W$ weight bytes,
-  $b$ batch size, $L$ layers, $T$ sequence length.
+- Standard notation for this series. Hardware: $B$ bandwidth (bytes/s), $C$ peak compute
+  (FLOP/s), $I$ arithmetic intensity (ops/byte), $I_{\text{ridge}} = C/B$, $W$ weight bytes,
+  $N$ parameter count. Model geometry follows the convention used in
+  [My Adventures with Large Language Models](https://leanpub.com/adventures-with-llms) so the
+  two line up: $l$ transformer blocks, $b$ batch size, $n$ key-value heads, $h$ head dimension,
+  $s$ context length in tokens.
+- Note $b$ is **batch size**, never bytes. Write bytes per weight or bytes per number in words.
 
 ### Units
 
@@ -182,8 +186,23 @@ read any diagram in the series at a glance. Never use these two colors decorativ
 ## 6. Code conventions
 
 - **Python only.** Every snippet must be **runnable** as written.
-- **Code earns its place.** This is a systems series, so include a snippet when it makes a
-  number reproducible or an argument checkable, not as decoration. A post may have few.
+- **Prefer hand math. Reach for code only when it earns the space.** If a number can be worked
+  out in a line or two of arithmetic that the reader could follow themselves, write it out by
+  hand instead. Use a code block only when at least one of these is true:
+  - it needs a **library**: NumPy, PyTorch, transformers, a tokenizer, a profiler
+  - it needs **non-trivial math**: logs, exponentials, softmax, matrix operations, sampling,
+    anything iterative like a convergence loop
+  - it needs **iteration or state** that is genuinely awkward on paper: a simulation, a
+    benchmark, a loop over many steps
+  - the **code itself is the point**, for example showing what a kernel or an API call looks like
+
+  A block that assigns three constants, multiplies them, and prints the answer is worse than the
+  same multiplication in prose: it buries one line of arithmetic inside ten lines of ceremony,
+  and it invites the reader to skim past a number they should be checking.
+- **How to write hand math.** Build the number up in named steps so each factor's role stays
+  visible ("8 heads of 128 dimensions gives 1,024 numbers; keys and values doubles it to
+  2,048"). When the same formula is evaluated at several inputs, use a small markdown table
+  rather than a loop. Round in the prose and say so.
 - **Code follows the explanation**, immediately after the concept it implements.
 - **Comments go on the line above the code, never beside it.**
 - **Show real output.** After every runnable snippet add a ` ```text title="Output" ` block with
@@ -265,6 +284,8 @@ Geist / Geist Mono) so figures and site share one visual language.
 - [ ] Figures obey the color semantics: warm = compute, cool = memory (§5).
 - [ ] Every figure and Mermaid diagram has an explanatory paragraph after it (§5).
 - [ ] `figures.py` regenerates every `fig-*.svg` for the post with no errors.
+- [ ] Every code block clears the §6 bar (library, non-trivial math, iteration, or the code is
+      the point); anything simpler is written as hand math instead.
 - [ ] Every snippet runs and has a `text title="Output"` block with real captured stdout (§6).
 - [ ] Code comments are on the line above, never trailing inline (§6).
 - [ ] "Where this goes next" ends with a `shortName` link to the next post (§1).

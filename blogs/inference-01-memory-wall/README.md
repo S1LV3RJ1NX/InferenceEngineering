@@ -234,6 +234,12 @@ That leaves exactly three ways past it, and they map onto the rest of this serie
 2. **Shrink the bytes per token.** Store the weights in fewer bits, or compress the runtime structures the model has to read. This is quantization, and it is the subject of an entire post later.
 3. **Amortize the transfer across more tokens.** Batch independent requests so one weight pass serves many users, or generate more than one token per forward pass. This is batching and speculative decoding.
 
+The first route deserves a closer look, because at first glance it should not work. We just established that a forward pass is sequential down the layers, so how does adding GPUs make a single token arrive faster?
+
+The answer is that sharding does not parallelize the sequence. It parallelizes the weight matrices. Under **tensor parallelism**, each GPU holds a slice of every weight matrix in every layer, typically a subset of the columns. When layer 12 runs, all eight GPUs read their own slice out of their own HBM at the same time, so the time to stream that layer is $W/8$ divided by $B$ instead of $W$ divided by $B$. Depth is still strictly sequential and layer 12 still waits for layer 11, but the bytes each layer needs now arrive eight times faster. Recall the framing from Section 2.3: depth is sequential and width is parallel. A weight matrix is width.
+
+Nothing here is free. After each sharded multiplication every GPU holds a partial result, and those have to be summed and redistributed across the group before the next operation can start. That collective communication travels over the interconnect between the chips, and it is why doubling the GPU count does not quite halve the latency, and why the technique stops paying past a certain point. We will take it apart properly later in the series.
+
 **Every serving optimization in this series is one of those three moves.** Keep the list in mind, because from here on we will mostly be filling it in.
 
 ### 2.7 Why decode is sequential, and the cache that makes it possible
@@ -252,38 +258,32 @@ So we save them instead. Every time a token passes through a layer, the key and 
 
 This is an obvious optimization once you see it, and every modern serving system implements it. It is the reason decode is tractable at all. It is also, as we are about to see, the reason most of the remaining optimizations in this series exist.
 
-The cache stores two vectors per token, a key and a value, in every layer:
+How big does that region get? The cache holds a key vector and a value vector per token, in every layer, for every request being served at once:
 
-$$k_{\text{token}} = 2 \times L \times H_{kv} \times d_{\text{head}} \times b$$
+$$\text{KV cache bytes} = l \times b \times n \times h \times s \times 2 \times 2$$
 
-Read it: the leading 2 counts the key and the value, $L$ is the number of transformer layers, $H_{kv}$ is the number of key-value heads, $d_{\text{head}}$ is the width of each head, and $b$ is the bytes used per number. Interpreting it: the cost per token is fixed by the model's architecture, and every term is a design choice someone made. Cutting $H_{kv}$ or $b$ cuts the cache proportionally, which is exactly what later techniques do.
+Read it term by term: $l$ is the number of transformer blocks, $b$ is the batch size (how many requests share the machine), $n$ is the number of key-value heads, $h$ is the size of each head, $s$ is the context length in tokens, the first 2 counts the two caches per block (one for keys, one for values), and the second 2 is the bytes per number at 16-bit precision. Interpreting it: the cache grows linearly in every one of those factors at once, and nothing in the expression saturates or tails off. Double the layers and it doubles. Double the conversation length and it doubles. Double the number of concurrent users and it doubles again.
 
-For Llama-3-70B, with 80 layers, 8 key-value heads of dimension 128, at 16-bit precision:
+One term deserves a warning, because it is where a first estimate usually goes wrong. **$n$ is the number of key-value heads, not the number of query heads.** In classic multi-head attention those are the same number, but modern models deliberately decouple them. Llama-3-70B has 64 query heads and only 8 key-value heads, so eight query heads share each cached key and value. That one design choice, grouped-query attention, divides this entire formula by eight.
 
-```python
-# Llama-3-70B geometry
-LAYERS = 80
-KV_HEADS = 8
-HEAD_DIM = 128
-BYTES_PER_NUMBER = 2  # 16-bit
+Now put Llama-3-70B in and ask what a single token of a single conversation costs. Set $b = 1$ and $s = 1$, and build it up one factor at a time:
 
-# one key vector and one value vector, in every layer, for every token
-per_token = 2 * LAYERS * KV_HEADS * HEAD_DIM * BYTES_PER_NUMBER
-print(f"KV cache per token: {per_token:,} bytes  ({per_token / 1024:.0f} KB)\n")
+- 8 key-value heads of 128 dimensions gives $8 \times 128 = 1{,}024$ numbers for that token's keys in one layer
+- keys and values together doubles it to $2{,}048$ numbers
+- at 2 bytes each, that is $4{,}096$ bytes per layer
+- across all 80 layers, $4{,}096 \times 80 = 327{,}680$ bytes
 
-for tokens in (1_000, 10_000, 100_000):
-    print(f"{tokens:>7,} tokens -> {tokens * per_token / 1e9:6.2f} GB of cache")
-```
+So one token costs **320 KB**, and because $s$ enters the formula linearly, a conversation is just that number multiplied out:
 
-```text title="Output"
-KV cache per token: 327,680 bytes  (320 KB)
-
-  1,000 tokens ->   0.33 GB of cache
- 10,000 tokens ->   3.28 GB of cache
-100,000 tokens ->  32.77 GB of cache
-```
+| Conversation length | KV cache |
+| ------------------- | -------- |
+| 1,000 tokens        | 0.33 GB  |
+| 10,000 tokens       | 3.3 GB   |
+| 100,000 tokens      | 33 GB    |
 
 Every token of conversation costs 320 KB of permanent HBM residency, and at 100,000 tokens the cache has grown to 33 GB.
+
+It is worth seeing what that number looks like without grouped-query attention, because it explains why the technique exists. Take a model with 61 blocks and 128 heads of size 128, and let it cache all 128 heads at a context of 100,000 tokens. The same formula gives $61 \times 1 \times 128 \times 128 \times 100{,}000 \times 2 \times 2$, which is over **400 GB** for a single conversation, comfortably more than the weights of most models you would want to run. Nobody ships that. The cache-shrinking techniques are not optimizations bolted on afterward, they are what makes long context possible at all.
 
 ![Log-log chart of KV cache size against conversation length, rising linearly from 0.33 GB at 1,000 tokens to 33 GB at 100,000 tokens, with a dashed reference line at the model's 141 GB weight footprint](./images/fig-kv-cache-growth.svg)
 
@@ -291,32 +291,18 @@ The figure puts that growth next to the model's own footprint. The dashed line i
 
 And now the two halves of the post collide. The cache lives in HBM right alongside the weights, and every decode step must read every weight _and_ every cache entry up to the current position. Both draw on the same bandwidth budget, so the cache enters the bytes-per-token bill directly:
 
-$$\text{tokens per second} = \frac{B}{W + T \cdot k_{\text{token}}}$$
+$$\text{tokens per second} = \frac{B}{W + s \cdot k_{\text{token}}}$$
 
-Read it: $B$ is bandwidth, $W$ is the 140 GB of weights, $T$ is the current conversation length in tokens, and $k_{\text{token}}$ is the 320 KB per token we just computed. Interpreting it: the denominator now grows as the conversation goes on, so the ceiling we derived in the last section is not a constant. It decays as the user keeps talking.
+Read it: $B$ is bandwidth, $W$ is the 140 GB of weights, $s$ is the current conversation length in tokens, and $k_{\text{token}}$ is the 320 KB per token we just computed. Interpreting it: the denominator now grows as the conversation goes on, so the ceiling from the last section is not a constant. It decays as the user keeps talking.
 
-```python
-HBM_BANDWIDTH = 3.35e12  # bytes/s
-WEIGHT_BYTES = 140e9  # 70B parameters at 2 bytes each
-KV_BYTES_PER_TOKEN = 327_680  # from the previous snippet
+Work the worst case by hand. At a context of 128,000 tokens the cache holds $128{,}000 \times 327{,}680 = 41.9$ GB, so each decode step has to move $140 + 41.9 = 181.9$ GB rather than 140. Divide bandwidth by that and $3.35 \div 0.1819 = 18.4$ tokens per second. Repeating that division at a few lengths:
 
-for context in (0, 8_000, 32_000, 128_000):
-    # every decode step reads all the weights AND the whole cache so far
-    bytes_per_token = WEIGHT_BYTES + context * KV_BYTES_PER_TOKEN
-    # tokens/s = bandwidth / bytes that must move to produce one token
-    ceiling = HBM_BANDWIDTH / bytes_per_token
-    print(
-        f"context {context:>7,} tokens:  "
-        f"{bytes_per_token / 1e9:6.1f} GB per token  ->  {ceiling:5.1f} tokens/s"
-    )
-```
-
-```text title="Output"
-context       0 tokens:   140.0 GB per token  ->   23.9 tokens/s
-context   8,000 tokens:   142.6 GB per token  ->   23.5 tokens/s
-context  32,000 tokens:   150.5 GB per token  ->   22.3 tokens/s
-context 128,000 tokens:   181.9 GB per token  ->   18.4 tokens/s
-```
+| Context         | Bytes moved per token | Ceiling      |
+| --------------- | --------------------- | ------------ |
+| empty           | 140.0 GB              | 23.9 tok/s   |
+| 8,000 tokens    | 142.6 GB              | 23.5 tok/s   |
+| 32,000 tokens   | 150.5 GB              | 22.3 tok/s   |
+| 128,000 tokens  | 181.9 GB              | 18.4 tok/s   |
 
 A long conversation is measurably slower than a short one, on identical hardware, for no reason other than bytes.
 
@@ -362,16 +348,16 @@ The figure contrasts two ways to run the same hardware. On the left a small batc
 
 Every number in this post came from two hardware specs and one model. Here is the whole chain in one place, evaluated for an NVIDIA H100 SXM running Llama-3-70B at 16-bit precision.
 
-| Concept              | Formula                         | Number                         |
-| -------------------- | ------------------------------- | ------------------------------ |
-| Weight footprint     | $W = N \times b$                | 140 GB                         |
-| Arithmetic intensity | $I = \text{ops} / \text{bytes}$ | 1,986 prefill, 1.0 decode      |
-| Roofline             | $P = \min(C,\ B \cdot I)$       | capped at 989 TFLOP/s          |
-| Ridge point          | $I_{\text{ridge}} = C / B$      | 295 ops/byte                   |
-| Prefill verdict      | $I > I_{\text{ridge}}$          | 6.7x above, compute-bound      |
-| Decode verdict       | $I < I_{\text{ridge}}$          | 295x below, memory-bound       |
-| KV cache per token   | $2 L H_{kv} d_{\text{head}} b$  | 320 KB                         |
-| Decode ceiling       | $B / (W + T k_{\text{token}})$  | 23.9 tok/s empty, 18.4 at 128K |
+| Concept              | Formula                                  | Number                         |
+| -------------------- | ---------------------------------------- | ------------------------------ |
+| Weight footprint     | $W = N \times \text{bytes per weight}$   | 140 GB                         |
+| Arithmetic intensity | $I = \text{ops} / \text{bytes}$          | 1,986 prefill, 1.0 decode      |
+| Roofline             | $P = \min(C,\ B \cdot I)$                | capped at 989 TFLOP/s          |
+| Ridge point          | $I_{\text{ridge}} = C / B$               | 295 ops/byte                   |
+| Prefill verdict      | $I > I_{\text{ridge}}$                   | 6.7x above, compute-bound      |
+| Decode verdict       | $I < I_{\text{ridge}}$                   | 295x below, memory-bound       |
+| KV cache             | $l \times b \times n \times h \times s \times 2 \times 2$ | 320 KB per token   |
+| Decode ceiling       | $B / (W + s \cdot k_{\text{token}})$     | 23.9 tok/s empty, 18.4 at 128K |
 
 Read the table top to bottom and the opening puzzle dissolves. A modern accelerator's compute has outgrown its bandwidth by a factor that keeps widening. A transformer streams all of its weights from HBM once per forward pass. Prefill shares that transfer across thousands of tokens and lands on the compute ceiling. Decode shares it with nothing and lands 295 times down the bandwidth ceiling. The KV cache, which is the only reason decode is tractable at all, sits in the same memory and adds to the same bill. TTFT and TPOT are what the user feels, and goodput is what the operator optimizes.
 
