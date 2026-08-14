@@ -11,6 +11,75 @@ math style, figures, and code. The goal of each post: take a reader from
 
 ---
 
+## 0. The workflow, end to end
+
+**Inputs:** a transcript in `transcripts/` and the source video URL. Everything else is derived.
+
+1. **Read the whole transcript.** Auto-transcripts mishear technical terms; note anything that
+   looks wrong and confirm it against the frames in step 2.
+2. **Pull reference frames from the video** (§0a). Do this *before* designing figures.
+3. **Agree the outline and the figure list** before writing prose. Figures drive the structure.
+4. **Build the figures** in `assets/figures.py`, then preview and fix them (§0b).
+5. **Generate the hero** image (§5), no text or letters, house palette.
+6. **Write the post** against the spine in §1.
+7. **Self-review** against the checklist in §9.
+8. **Sync to the portfolio with `draft: true`**, run the dev server, read it in the browser.
+   A draft builds no page, so flip it to `false` locally just for the preview and leave the
+   source as a draft until it is approved.
+9. **Publish** (§7): flip `draft`, sync, `npm run build`, commit, push.
+
+**Verify every number.** The transcript states results without deriving them. Re-derive each
+one, and when a source number disagrees with what the arithmetic gives, say so in the post
+rather than quietly picking one. If a number cannot be reconciled, flag it rather than shipping it.
+
+### 0a. Reference frames from the source video
+
+The video's own visuals are the best guide to what deserves a figure, and they often contain
+numbers and labels the spoken audio never says. Requires `yt-dlp` and `ffmpeg`.
+
+```bash
+mkdir -p reference/frames
+yt-dlp -f 'bv*[height<=720]+ba/b[height<=720]' --merge-output-format mp4 \
+  -o 'reference/video.%(ext)s' '<VIDEO_URL>'
+
+# one frame per timestamp where the transcript says a diagram is on screen
+ffmpeg -nostdin -loglevel error -ss 00:05:20 -i reference/video.mp4 \
+  -frames:v 1 -y reference/frames/0520-divergence.png
+```
+
+Choose timestamps by scanning the transcript for moments a diagram is being described, then
+extract 15 to 25 frames and actually look at them. Delete the video afterward; keep the frames.
+`reference/` is gitignored.
+
+What to take and what not to: **take the pedagogy, not the pixels.** Framing, what deserves a
+figure, and which comparison makes a point land are all fair. Redraw everything in the house
+palette (§5) and write every explanation in our own words. Credit the source (§1c).
+
+### 0b. Preview figures before writing prose
+
+SVGs are what ship, but they cannot be inspected directly, and label collisions are invisible
+until rendered. Render PNG previews and look at every one:
+
+```bash
+uv run python -c "
+import sys, pathlib
+sys.path.insert(0, 'blogs/assets')
+import matplotlib.pyplot as plt
+import figures
+out = pathlib.Path('reference/preview'); out.mkdir(parents=True, exist_ok=True)
+def save_png(fig, blog, name):
+    fig.savefig(out / f'{name}.png', dpi=110, bbox_inches='tight'); plt.close(fig)
+figures.save = save_png
+for b in figures.BUILDERS['NN']: b()
+"
+```
+
+Expect to iterate. Annotation text overlapping a plotted line, a legend sitting on a curve, and
+duplicated tick labels across subplots are all normal on the first pass and all invisible in the
+raw SVG.
+
+---
+
 ## 1. The 4-part spine (every post, in this order)
 
 1. **The intuition.** Explain the idea in plain language first, with one AI hero illustration
@@ -82,8 +151,8 @@ blogs/
     images/
       ai-*.png                      <- AI-generated conceptual illustrations
       fig-*.svg                     <- code-generated diagrams (matplotlib)
-reference/                          <- gitignored: frames pulled from source videos
-transcripts/                        <- source transcripts
+reference/                          <- gitignored: frames + previews, local only
+transcripts/                        <- gitignored: source transcripts, local only
 ```
 
 - One folder per post, prefixed `inference-NN-`. The prefix namespaces this series away from
@@ -294,6 +363,10 @@ Geist / Geist Mono) so figures and site share one visual language.
 
 ## 9. Pre-publish checklist
 
+- [ ] Reference frames pulled and reviewed before the figure list was fixed (§0a).
+- [ ] Every figure previewed as PNG and checked for label collisions (§0b).
+- [ ] Every number re-derived, not copied from the transcript; any disagreement with the source
+      stated openly rather than silently resolved (§0).
 - [ ] 4-part spine present and in order; throughline sentence referenced.
 - [ ] Every new one-liner expanded; prior-post concepts recalled in one line + linked (§1a).
 - [ ] Other posts referenced by `shortName` + link, never "post N" (§1a).
