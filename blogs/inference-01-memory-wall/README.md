@@ -369,4 +369,6 @@ Read the table top to bottom and the opening puzzle dissolves. A modern accelera
 
 We now know where the time goes. The rest of the series is about what to do with that knowledge, and the three escape routes from Section 2.6 are the outline: raise bandwidth, shrink the bytes, or amortize the transfer.
 
-The next post takes the second route and asks the obvious question. If the bill is bytes, and every weight is currently costing us 2 of them, what happens when we store the model in fewer bits? The answer involves opening up the accelerator, looking at the code that actually runs on it, and being precise about what precision buys and what it costs.
+Before taking any of them, it is worth opening up the machine that imposed the limit. Both numbers we leaned on all post, the 989 TFLOP/s and the 3.35 TB/s, are properties of specific silicon: 528 tensor cores at one end and a stack of DRAM at the other, separated by a memory ladder whose top rung is a thousand times faster than its bottom. Knowing how that ladder is built is what makes the three escape routes concrete rather than abstract.
+
+That is the [Inside the GPU](../inference-02-inside-the-gpu/README.md) post, which also ends on the cleanest evidence for everything argued here: two chips with an identical compute die, differing only in memory, and the one with faster memory runs inference meaningfully faster.

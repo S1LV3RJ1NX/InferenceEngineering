@@ -468,6 +468,395 @@ def fig_goodput() -> None:
     save(fig, BLOG01, "fig-goodput")
 
 
+# ----------------------------------------------------------------------------
+# Blog 02 — Inside the GPU
+# ----------------------------------------------------------------------------
+BLOG02 = "inference-02-inside-the-gpu"
+
+
+def fig_cpu_vs_gpu() -> None:
+    """Two silicon budgets: a CPU spends it on anticipation, a GPU on arithmetic."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.4))
+
+    # CPU: a few big cores, most of the die given to control and cache
+    ax = axes[0]
+    _blank(ax, (0, 10), (0, 8))
+    ax.add_patch(Rectangle((0.3, 0.4), 9.4, 7.2, facecolor="none", edgecolor=INK))
+    for i in range(4):
+        x = 0.8 + (i % 2) * 4.4
+        y = 4.6 - (i // 2) * 2.3
+        ax.add_patch(Rectangle((x, y), 3.9, 1.9, facecolor=COMPUTE_SOFT,
+                               edgecolor=COMPUTE, alpha=0.85))
+        ax.text(x + 1.95, y + 0.95, "core", ha="center", va="center",
+                color=INK, fontsize=10)
+    ax.add_patch(Rectangle((0.8, 0.9), 8.4, 1.3, facecolor=DIVIDER,
+                           edgecolor=MUTED, alpha=0.7))
+    ax.text(5.0, 1.55, "branch prediction, out-of-order, caches",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+    ax.text(5.0, 7.05, "a few tens of fast threads", ha="center",
+            color=MUTED, fontsize=11)
+    ax.set_title("CPU: rush one thread", pad=12)
+
+    # GPU: the die is arithmetic, control is a thin strip
+    ax = axes[1]
+    _blank(ax, (0, 10), (0, 8))
+    ax.add_patch(Rectangle((0.3, 0.4), 9.4, 7.2, facecolor="none", edgecolor=INK))
+    for r in range(7):
+        for c in range(16):
+            ax.add_patch(Rectangle((0.75 + c * 0.55, 2.6 + r * 0.62), 0.4, 0.44,
+                                   facecolor=COMPUTE_SOFT, edgecolor="none"))
+    ax.add_patch(Rectangle((0.8, 0.9), 8.4, 0.8, facecolor=DIVIDER,
+                           edgecolor=MUTED, alpha=0.7))
+    ax.text(5.0, 1.3, "control: a thin strip", ha="center", va="center",
+            color=MUTED, fontsize=10.5)
+    ax.text(5.0, 7.05, "270,000 threads in flight", ha="center",
+            color=MUTED, fontsize=11)
+    ax.set_title("GPU: run 270,000 slow ones", pad=12)
+
+    fig.suptitle("The same silicon budget, spent on opposite bets",
+                 fontsize=14, fontweight="bold", color=INK, y=1.04)
+    save(fig, BLOG02, "fig-cpu-vs-gpu")
+
+
+def fig_sm_anatomy() -> None:
+    """One SM: four identical processing blocks over a shared memory pool.
+
+    The 128 CUDA cores, 4 tensor cores, 4 schedulers and 256 KB register file are
+    not four separate regions of the SM. They are four copies of the same block.
+    """
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(10.5, 5.8))
+    _blank(ax, (0, 12.6), (-0.9, 8.6))
+
+    ax.add_patch(Rectangle((0.25, 0.35), 12.1, 7.5, facecolor="none", edgecolor=INK))
+    ax.text(6.3, 8.15, "one streaming multiprocessor (SM)  ·  stamped out 132 times",
+            ha="center", color=INK, fontsize=12.5, fontweight="bold")
+
+    for p in range(4):
+        x0 = 0.6 + p * 2.95
+        ax.add_patch(Rectangle((x0, 2.3), 2.6, 5.2, facecolor="none",
+                               edgecolor=MUTED, alpha=0.8))
+        ax.text(x0 + 1.3, 7.65, f"processing block {p + 1}", ha="center",
+                color=MUTED, fontsize=9.5)
+
+        # one warp scheduler per block
+        ax.add_patch(Rectangle((x0 + 0.2, 6.75), 2.2, 0.55,
+                               facecolor=MEMORY_SOFT, edgecolor=MEMORY, alpha=0.7))
+        ax.text(x0 + 1.3, 7.02, "warp scheduler", ha="center", va="center",
+                color=INK, fontsize=9)
+
+        # its own slice of the register file
+        ax.add_patch(Rectangle((x0 + 0.2, 6.05), 2.2, 0.5,
+                               facecolor=MEMORY_SOFT, edgecolor=MEMORY, alpha=0.7))
+        ax.text(x0 + 1.3, 6.3, "64 KB registers", ha="center", va="center",
+                color=INK, fontsize=9)
+
+        # 32 CUDA cores
+        for r in range(8):
+            for c in range(4):
+                ax.add_patch(Rectangle((x0 + 0.42 + c * 0.55, 3.55 + r * 0.29),
+                                       0.36, 0.2, facecolor=COMPUTE_SOFT,
+                                       edgecolor="none"))
+        ax.text(x0 + 1.3, 3.22, "32 CUDA cores", ha="center", color=COMPUTE, fontsize=9.5)
+
+        # exactly one tensor core
+        ax.add_patch(Rectangle((x0 + 0.42, 2.5), 1.76, 0.6,
+                               facecolor=COMPUTE, edgecolor=COMPUTE, alpha=0.9))
+        ax.text(x0 + 1.3, 2.8, "1 tensor core", ha="center", va="center",
+                color=CANVAS, fontsize=9.5, fontweight="bold")
+
+    # shared by the whole SM, not per block
+    ax.add_patch(Rectangle((0.6, 0.75), 8.2, 1.25, facecolor=MEMORY_SOFT,
+                           edgecolor=MEMORY, alpha=0.6))
+    ax.text(4.7, 1.38, "256 KB SRAM  ·  up to 228 KB as shared memory, rest as L1",
+            ha="center", va="center", color=INK, fontsize=10.5)
+    ax.add_patch(Rectangle((9.1, 0.75), 2.9, 1.25, facecolor=MEMORY_SOFT,
+                           edgecolor=MEMORY, alpha=0.6))
+    ax.text(10.55, 1.38, "TMA\n(Hopper)", ha="center", va="center",
+            color=INK, fontsize=10.5)
+
+    ax.text(6.3, -0.45,
+            "4 blocks x (32 CUDA cores + 1 tensor core) = 128 and 4.  "
+            "Only the bottom row is shared.",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+    save(fig, BLOG02, "fig-sm-anatomy")
+
+
+def fig_memory_ladder() -> None:
+    """Four levels, each step trading speed for capacity."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(9, 4.4))
+
+    levels = ["Registers\n(per SM)", "Shared + L1\n(per SM)", "L2 cache\n(whole chip)", "HBM\n(off-die)"]
+    capacity_bytes = [256e3, 228e3, 50e6, 80e9]
+    latency = ["1 cycle", "tens of cycles", "hundreds of cycles", "~482 cycles"]
+
+    bars = ax.barh(levels, capacity_bytes, color=MEMORY, height=0.55, alpha=0.85)
+    ax.set_xscale("log")
+    ax.set_xlim(5e4, 1e12)
+    ax.set_xticks([1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11])
+    ax.set_xticklabels(["100 KB", "1 MB", "10 MB", "100 MB", "1 GB", "10 GB", "100 GB"])
+    ax.set_xlabel("capacity  (log scale)")
+
+    for bar, lat in zip(bars, latency):
+        ax.text(bar.get_width() * 1.5, bar.get_y() + bar.get_height() / 2, lat,
+                va="center", ha="left", color=INK, fontsize=11.5, fontweight="bold")
+
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_title("The memory ladder: capacity up, speed down")
+    save(fig, BLOG02, "fig-memory-ladder")
+
+
+def fig_latency_hiding() -> None:
+    """The GPU does not avoid the stall, it fills it with other warps."""
+    sketch_style()
+    rng = np.random.default_rng(3)
+    fig, ax = plt.subplots(figsize=(10.5, 4.2))
+    n_warps = 6
+    _blank(ax, (-1.9, 12.4), (-1.3, n_warps + 0.3))
+
+    for i in range(n_warps):
+        y = n_warps - 1 - i
+        start = i * 0.55
+        # a short burst of compute, then a long wait on HBM
+        ax.add_patch(Rectangle((start, y + 0.12), 0.5, 0.5,
+                               facecolor=COMPUTE, edgecolor=COMPUTE))
+        ax.add_patch(Rectangle((start + 0.5, y + 0.22), 8.4, 0.3,
+                               facecolor=MEMORY_SOFT, edgecolor=MEMORY, alpha=0.55))
+        ax.text(-0.25, y + 0.37, f"warp {i}", ha="right", va="center",
+                color=MUTED, fontsize=10)
+
+    ax.text(0.25, n_warps + 0.02, "compute", ha="left", color=COMPUTE, fontsize=10.5)
+    ax.text(4.7, n_warps + 0.02, "waiting on HBM", ha="center", color=MEMORY, fontsize=10.5)
+
+    ax.annotate("", xy=(3.6, -0.35), xytext=(0, -0.35),
+                arrowprops=dict(arrowstyle="<->", color=INK, lw=1.4))
+    ax.text(1.8, -0.72, "the SM is busy this whole time", ha="center", va="top",
+            color=INK, fontsize=11.5, fontweight="bold")
+    ax.text(1.8, -1.12, "every warp waits; the SM never does", ha="center", va="top",
+            color=MUTED, fontsize=10.5)
+
+    ax.set_title("Latency hiding: switching warps costs nothing", pad=12)
+    save(fig, BLOG02, "fig-latency-hiding")
+
+
+def fig_warp_divergence() -> None:
+    """One instruction stream, so both branches run back to back."""
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(10.5, 4.6))
+    _blank(ax, (-0.6, 18.5), (-2.3, 4.6))
+
+    for pass_idx, (label, active_first) in enumerate(
+        [("pass 1: if-path", True), ("pass 2: else-path", False)]
+    ):
+        x0 = pass_idx * 9.4
+        ax.text(x0 + 4.0, 4.1, label, ha="center", color=INK,
+                fontsize=11.5, fontweight="bold")
+        for lane in range(32):
+            r, c = divmod(lane, 8)
+            x = x0 + c * 1.0
+            y = 2.6 - r * 0.72
+            active = (lane < 16) == active_first
+            ax.add_patch(
+                Rectangle((x, y), 0.8, 0.56,
+                          facecolor=COMPUTE if active else CANVAS,
+                          edgecolor=COMPUTE if active else DIVIDER,
+                          alpha=0.9 if active else 1.0)
+            )
+        ax.text(x0 + 4.0, -0.35, "16 lanes idle" if True else "",
+                ha="center", color=MUTED, fontsize=10.5)
+
+    ax.add_patch(Rectangle((0, -1.5), 8.4, 0.5, facecolor=COMPUTE_SOFT,
+                           edgecolor=COMPUTE))
+    ax.add_patch(Rectangle((9.4, -1.5), 8.4, 0.5, facecolor=COMPUTE_SOFT,
+                           edgecolor=COMPUTE))
+    ax.text(9.0, -2.0, "wall-clock: both paths, in sequence, for half the work",
+            ha="center", va="top", color=INK, fontsize=11.5, fontweight="bold")
+
+    ax.set_title("Warp divergence: a balanced if/else halves throughput", pad=12)
+    save(fig, BLOG02, "fig-warp-divergence")
+
+
+def fig_coalescing() -> None:
+    """Same arithmetic, same 32 values, up to 32x the memory traffic."""
+    sketch_style()
+    fig, axes = plt.subplots(2, 1, figsize=(10, 5.4))
+
+    for ax, (title, coalesced) in zip(axes, [("Coalesced", True), ("Uncoalesced", False)]):
+        _blank(ax, (-0.4, 17), (-0.9, 2.6))
+        # the memory the hardware actually drags across the bus
+        n_blocks = 1 if coalesced else 8
+        for b in range(8):
+            fetched = coalesced or b < n_blocks
+            ax.add_patch(
+                Rectangle((b * 2.05, 0.5), 1.9, 0.9,
+                          facecolor=MEMORY_SOFT if (coalesced and b == 0) else
+                          (MEMORY_SOFT if not coalesced else CANVAS),
+                          edgecolor=MEMORY if fetched else DIVIDER,
+                          alpha=0.55 if fetched else 1.0)
+            )
+        # the values the warp actually wanted
+        if coalesced:
+            for t in range(8):
+                ax.add_patch(Rectangle((0.1 + t * 0.22, 0.72), 0.16, 0.46,
+                                       facecolor=INK, edgecolor="none"))
+            ax.text(8.2, 1.95, "32 values sit in one block, so one transaction serves the warp",
+                    ha="center", color=INK, fontsize=11.5, fontweight="bold")
+            ax.text(8.2, -0.5, "every byte moved is a byte someone wanted",
+                    ha="center", va="top", color=MUTED, fontsize=10.5)
+        else:
+            for b in range(8):
+                ax.add_patch(Rectangle((b * 2.05 + 0.85, 0.72), 0.16, 0.46,
+                                       facecolor=INK, edgecolor="none"))
+            ax.text(8.2, 1.95, "32 values scattered, so up to 32 separate transactions",
+                    ha="center", color=INK, fontsize=11.5, fontweight="bold")
+            ax.text(8.2, -0.5, "most of every block is hauled across the bus and thrown away",
+                    ha="center", va="top", color=MUTED, fontsize=10.5)
+        ax.set_title(title, pad=8)
+
+    fig.suptitle("Same math, same values: only the layout changed",
+                 fontsize=14, fontweight="bold", color=INK, y=1.02)
+    save(fig, BLOG02, "fig-coalescing")
+
+
+def fig_bandwidth_vs_compute() -> None:
+    """Across generations, compute pulls away from bandwidth."""
+    house_style()
+    gens = ["A100\n2020", "H100\n2022", "B200\n2024"]
+    x = np.arange(3)
+    bandwidth = np.array([2.0, 3.35, 8.0])
+    # peak dense tensor throughput at each generation's newest format
+    compute = np.array([312, 1979, 9000])
+
+    fig, ax = plt.subplots(figsize=(8.4, 4.6))
+    ax.plot(x, compute / compute[0], marker="o", ms=8, lw=2.8, color=COMPUTE,
+            label="peak compute, newest format each gen")
+    ax.plot(x, bandwidth / bandwidth[0], marker="o", ms=8, lw=2.8, color=MEMORY,
+            label="HBM bandwidth")
+    ax.fill_between(x, bandwidth / bandwidth[0], compute / compute[0],
+                    color=COMPUTE, alpha=0.10, lw=0)
+
+    for i, (fmt, bw) in enumerate(zip(["FP16", "FP8", "FP4"], bandwidth)):
+        # the first generation's two labels would otherwise collide at 1x
+        ha = "left" if i == 0 else "center"
+        dx = 10 if i == 0 else 0
+        ax.annotate(fmt, xy=(i, compute[i] / compute[0]),
+                    xytext=(dx, 13), textcoords="offset points",
+                    ha=ha, color=COMPUTE, fontsize=10.5, fontweight="bold")
+        ax.annotate(f"{bw} TB/s", xy=(i, bw / bandwidth[0]),
+                    xytext=(dx, -22), textcoords="offset points",
+                    ha=ha, color=MEMORY, fontsize=10.5)
+
+    ax.set_yscale("log")
+    ax.set_xticks(x)
+    ax.set_xticklabels(gens)
+    ax.set_ylim(0.6, 60)
+    ax.set_yticks([1, 2, 5, 10, 20, 50])
+    ax.set_yticklabels(["1x", "2x", "5x", "10x", "20x", "50x"])
+    ax.set_ylabel("growth since the A100  (log scale)")
+    ax.set_title("Each generation widens the gap")
+    ax.legend(frameon=False, loc="upper left", fontsize=10.5)
+    save(fig, BLOG02, "fig-bandwidth-vs-compute")
+
+
+def fig_h100_vs_h200() -> None:
+    """The controlled experiment: same compute die, faster memory."""
+    house_style()
+    fig, axes = plt.subplots(1, 3, figsize=(10.5, 3.4))
+
+    panels = [
+        ("Peak compute", [989, 989], "TFLOP/s", COMPUTE, "identical"),
+        ("HBM bandwidth", [3.35, 4.8], "TB/s", MEMORY, "+43%"),
+        ("HBM capacity", [80, 141], "GB", MEMORY, "+76%"),
+    ]
+    for ax, (title, vals, unit, color, delta) in zip(axes, panels):
+        bars = ax.bar(["H100", "H200"], vals, color=color, width=0.55)
+        # dim the H100 bar only where the H200 actually changed something
+        alphas = [0.9, 0.9] if delta == "identical" else [0.45, 0.95]
+        for bar, a in zip(bars, alphas):
+            bar.set_alpha(a)
+        for i, v in enumerate(vals):
+            ax.text(i, v * 1.03, f"{v:g}", ha="center", va="bottom",
+                    color=INK, fontsize=12, fontweight="bold")
+        ax.set_ylim(0, max(vals) * 1.30)
+        ax.set_title(f"{title}  ({unit})", fontsize=12)
+        ax.text(0.5, 0.90, delta, transform=ax.transAxes, ha="center",
+                color=color if delta != "identical" else MUTED,
+                fontsize=12, fontweight="bold")
+        ax.grid(axis="x", visible=False)
+
+    fig.suptitle("Same compute die. Only the memory changed.",
+                 fontsize=14, fontweight="bold", color=INK, y=1.06)
+    save(fig, BLOG02, "fig-h100-vs-h200")
+
+
+def fig_precision_ladder() -> None:
+    """Halving the bits pays twice: more math per second, fewer bytes to move."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(9, 4.4))
+
+    fmts = ["FP32", "FP16 / BF16\nVolta 2017", "FP8\nHopper 2022", "FP4\nBlackwell 2024"]
+    throughput = [1, 2, 4, 8]
+    bytes_per_weight = [4, 2, 1, 0.5]
+    x = np.arange(len(fmts))
+
+    ax.bar(x - 0.19, throughput, width=0.36, color=COMPUTE, alpha=0.9,
+           label="relative throughput")
+    ax.bar(x + 0.19, bytes_per_weight, width=0.36, color=MEMORY, alpha=0.9,
+           label="bytes per weight")
+
+    for i, (t, b) in enumerate(zip(throughput, bytes_per_weight)):
+        ax.text(i - 0.19, t + 0.15, f"{t}x", ha="center", color=INK,
+                fontsize=11, fontweight="bold")
+        ax.text(i + 0.19, b + 0.15, f"{b:g}", ha="center", color=INK,
+                fontsize=11, fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(fmts, fontsize=10.5)
+    ax.set_ylim(0, 9.4)
+    ax.set_ylabel("relative to FP32")
+    ax.set_title("Every halving of the bits pays on both ceilings")
+    ax.legend(frameon=False, loc="upper center", ncol=2)
+    ax.grid(axis="x", visible=False)
+    save(fig, BLOG02, "fig-precision-ladder")
+
+
+def fig_interconnect() -> None:
+    """Inside the NVLink domain traffic is cheap; outside it is the bottleneck."""
+    house_style()
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 3.8))
+
+    ax = axes[0]
+    labels = ["InfiniBand\n(between boxes)", "NVLink\nA100", "NVLink\nH100", "NVLink\nBlackwell"]
+    vals = [50, 600, 900, 1800]
+    colors = [MUTED, MEMORY_SOFT, MEMORY, MEMORY]
+    bars = ax.barh(labels, vals, color=colors, height=0.6, alpha=0.9)
+    ax.set_xscale("log")
+    ax.set_xlim(20, 6000)
+    ax.set_xlabel("per-GPU link bandwidth, GB/s  (log scale)")
+    for bar, v in zip(bars, vals):
+        ax.text(bar.get_width() * 1.25, bar.get_y() + bar.get_height() / 2,
+                f"{v:g}", va="center", color=INK, fontsize=11, fontweight="bold")
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_title("An order of magnitude, per byte", fontsize=12)
+
+    ax = axes[1]
+    dom = ["DGX A100", "DGX H100", "GB200 NVL72"]
+    sizes = [8, 8, 72]
+    ax.bar(dom, sizes, color=MEMORY, alpha=0.9, width=0.55)
+    for i, s in enumerate(sizes):
+        ax.text(i, s + 2, str(s), ha="center", color=INK, fontsize=12, fontweight="bold")
+    ax.set_ylim(0, 88)
+    ax.set_ylabel("GPUs in one NVLink domain")
+    ax.set_title("So the fast neighborhood keeps growing", fontsize=12)
+    ax.grid(axis="x", visible=False)
+
+    save(fig, BLOG02, "fig-interconnect")
+
+
 BUILDERS: dict[str, list] = {
     "01": [
         fig_where_time_goes,
@@ -479,6 +868,18 @@ BUILDERS: dict[str, list] = {
         fig_kv_cache_growth,
         fig_decode_ceiling,
         fig_goodput,
+    ],
+    "02": [
+        fig_cpu_vs_gpu,
+        fig_sm_anatomy,
+        fig_memory_ladder,
+        fig_latency_hiding,
+        fig_warp_divergence,
+        fig_coalescing,
+        fig_bandwidth_vs_compute,
+        fig_h100_vs_h200,
+        fig_precision_ladder,
+        fig_interconnect,
     ],
 }
 
