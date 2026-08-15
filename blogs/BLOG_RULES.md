@@ -112,6 +112,9 @@ recall plus a markdown link** and immediately use it. The depth budget belongs t
 **Reference other posts by their `shortName`, never by number.** Write "the
 [Memory Wall](../inference-01-memory-wall/README.md) post", not "post 1".
 
+**Define before use includes figures.** A term first appearing in a diagram label, a Mermaid
+node, or alt text counts as its first use, and must be defined in the prose above it. See §5.
+
 ### 1b. Understanding checks
 
 Render self-checks as hidden-answer blocks so the reader can self-test first:
@@ -246,6 +249,25 @@ Two kinds of images, two clear jobs. **Default to SVG.**
 - **Every diagram gets an explanatory paragraph right after it** (including Mermaid), saying
   what it shows and how it ties to the concept just taught.
 
+### Drawing structure
+
+Two rules learned the hard way on post 02, both from a reader question rather than the
+checklist.
+
+- **Draw repetition as repetition.** When hardware is one design stamped out N times, the figure
+  has to show N copies of the same block, not a collection of separately labelled parts. Post
+  02's first SM diagram showed a block of 128 CUDA cores beside a block of 4 tensor cores, with
+  the schedulers off in a corner. That is a true parts list and a false structure: an SM is
+  really four identical processing blocks, each with 32 CUDA cores, 1 tensor core, 1 scheduler
+  and 64 KB of registers. Drawn as a parts list, the numbers 128, 4, 4 and 256 KB look
+  arbitrary; drawn as four copies, they are one block multiplied. **If several numbers in a
+  component share a common factor, that factor is almost always the structure, and the figure
+  should show it.**
+- **A label in a figure counts as first use.** The define-before-use rule in §1a applies to
+  diagram and Mermaid labels exactly as it does to prose. Post 02 introduced "SM" in a Mermaid
+  node four lines before defining it. Readers hit the picture first, so the term must be defined
+  before the figure that uses it, not in the section the figure introduces.
+
 ### The color semantics (series-wide)
 
 The single most important visual rule. Every figure in this series obeys one code:
@@ -377,6 +399,10 @@ Geist / Geist Mono) so figures and site share one visual language.
       today's real publish date (§3).
 - [ ] Every symbol defined on first use; every formula followed by a plugged-in number (§4).
 - [ ] Every display equation read symbol by symbol, then interpreted (§4).
+- [ ] Every acronym and term is defined before the first figure or Mermaid node that uses it,
+      not after (§1a, §5).
+- [ ] Repeating hardware is drawn as N copies of one block, not as a parts list; any shared
+      factor across a component's numbers is visible in the figure (§5).
 - [ ] Figures obey the color semantics: warm = compute, cool = memory (§5).
 - [ ] Every figure and Mermaid diagram has an explanatory paragraph after it (§5).
 - [ ] `figures.py` regenerates every `fig-*.svg` for the post with no errors.
