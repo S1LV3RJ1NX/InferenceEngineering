@@ -857,6 +857,389 @@ def fig_interconnect() -> None:
     save(fig, BLOG02, "fig-interconnect")
 
 
+# ----------------------------------------------------------------------------
+# Blog 03 — Kernels and FlashAttention 1
+# ----------------------------------------------------------------------------
+BLOG03 = "inference-03-kernels-and-flashattention"
+
+
+def fig_three_passes() -> None:
+    """The naive kernel parks the N x N score matrix in HBM and reads it back twice."""
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(10.5, 4.4))
+    _blank(ax, (0, 13), (-1.2, 6.4))
+
+    ax.add_patch(Rectangle((0.3, 1.0), 3.2, 4.4, facecolor="none", edgecolor=COMPUTE))
+    ax.text(1.9, 5.75, "GPU die", ha="center", color=COMPUTE, fontsize=11.5,
+            fontweight="bold")
+    ax.text(1.9, 3.2, "tensor\ncores", ha="center", va="center", color=INK, fontsize=11)
+
+    ax.add_patch(Rectangle((9.6, 1.0), 3.1, 4.4, facecolor=MEMORY_SOFT,
+                           edgecolor=MEMORY, alpha=0.45))
+    ax.text(11.15, 5.75, "HBM", ha="center", color=MEMORY, fontsize=11.5,
+            fontweight="bold")
+    ax.text(11.15, 3.2, "S  stored\nin full", ha="center", va="center",
+            color=INK, fontsize=11)
+
+    passes = [
+        (4.6, "pass 1", "compute S, write it out"),
+        (3.2, "pass 2", "read S, softmax, write back"),
+        (1.8, "pass 3", "read it again, multiply by V"),
+    ]
+    for y, label, detail in passes:
+        ax.add_patch(FancyArrowPatch((3.7, y), (9.4, y), arrowstyle="<->",
+                                     mutation_scale=18, color=MEMORY, lw=2))
+        ax.text(6.55, y + 0.28, f"{label}: {detail}", ha="center",
+                color=INK, fontsize=10.5)
+
+    ax.text(6.55, -0.55, "three full crossings of the bus, each of size N x N",
+            ha="center", va="top", color=INK, fontsize=12, fontweight="bold")
+    ax.set_title("The naive kernel: same math, three trips through the slow tier", pad=12)
+    save(fig, BLOG03, "fig-three-passes")
+
+
+def fig_nsquared_growth() -> None:
+    """The score matrix grows with the square of the sequence length."""
+    house_style()
+    n = np.logspace(np.log10(512), np.log10(131072), 200)
+    entries = n**2
+
+    fig, ax = plt.subplots(figsize=(8.4, 4.4))
+    ax.plot(n, entries, lw=2.8, color=MEMORY)
+    ax.fill_between(n, 1e4, entries, color=MEMORY, alpha=0.10, lw=0)
+
+    for tokens, label in [(1024, "1K tokens\n1.0M entries"),
+                          (8192, "8K\n67M"),
+                          (32768, "32K\n1.1B")]:
+        ax.plot([tokens], [tokens**2], "o", ms=8, color=MEMORY)
+        ax.annotate(label, xy=(tokens, tokens**2), xytext=(tokens * 1.12, tokens**2 * 0.16),
+                    color=MUTED, fontsize=11)
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(512, 131072)
+    ax.set_ylim(1e5, 2e10)
+    ax.set_xlabel("sequence length  (tokens, log scale)")
+    ax.set_ylabel("entries in the score matrix  (log scale)")
+    ax.set_title("Double the sequence, quadruple the matrix")
+    save(fig, BLOG03, "fig-nsquared-growth")
+
+
+def fig_tiling() -> None:
+    """What is resident on chip, drawn against the full matrices it is cut from.
+
+    The point of the figure is that every solid shape is one slice. Drawing the
+    blocks without their parent matrices made them read as whole tensors.
+    """
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(12, 4.8))
+    _blank(ax, (0, 31), (-2.4, 10.2))
+
+    n_div = 8
+    active = 2
+
+    def tall(x0, label, active_idx, color, soft):
+        """A full N x d matrix, faint, with one row block solid."""
+        ax.add_patch(Rectangle((x0, 1.2), 3.0, 7.0, facecolor="none",
+                               edgecolor=DIVIDER, ls="--"))
+        h = 7.0 / n_div
+        for i in range(n_div):
+            if i == active_idx:
+                ax.add_patch(Rectangle((x0, 1.2 + i * h), 3.0, h,
+                                       facecolor=soft, edgecolor=color))
+        ax.text(x0 + 1.5, 8.7, label, ha="center", color=color,
+                fontsize=11.5, fontweight="bold")
+
+    tall(0.6, "Q", n_div - 1 - active, MEMORY, MEMORY_SOFT)
+    ax.text(2.1, 0.55, "one block,\nstays put", ha="center", va="top",
+            color=MUTED, fontsize=9.5)
+
+    tall(5.0, "K", 3, MEMORY, MEMORY_SOFT)
+    tall(9.4, "V", 3, MEMORY, MEMORY_SOFT)
+    ax.text(9.4, 0.55, "one block each,\nstreaming past", ha="center", va="top",
+            color=MUTED, fontsize=9.5)
+
+    # the score matrix, with exactly one tile live
+    ax.add_patch(Rectangle((14.6, 1.2), 7.0, 7.0, facecolor="none",
+                           edgecolor=DIVIDER, ls="--"))
+    c = 7.0 / n_div
+    for r in range(n_div):
+        for col in range(n_div):
+            live = r == active and col == 3
+            ax.add_patch(Rectangle((14.6 + col * c, 1.2 + (n_div - 1 - r) * c), c, c,
+                                   facecolor=COMPUTE if live else "none",
+                                   edgecolor=COMPUTE if live else DIVIDER,
+                                   ls="-" if live else "--"))
+    ax.text(18.1, 8.7, "S", ha="center", color=COMPUTE, fontsize=11.5,
+            fontweight="bold")
+    ax.text(18.1, 0.55, "one tile, built and\noverwritten each step",
+            ha="center", va="top", color=MUTED, fontsize=9.5)
+
+    tall(24.6, "O", n_div - 1 - active, MEMORY, MEMORY_SOFT)
+    ax.text(26.1, 0.55, "one block,\naccumulating", ha="center", va="top",
+            color=MUTED, fontsize=9.5)
+
+    ax.text(15.5, 9.6,
+            "solid = resident on chip          dashed = the full matrix, which never is",
+            ha="center", color=INK, fontsize=11.5, fontweight="bold")
+    ax.text(15.5, -1.9,
+            "every solid shape is a single slice. the dashed outlines are drawn only to show what it is a slice of",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+    save(fig, BLOG03, "fig-tiling")
+
+
+def fig_attention_shapes() -> None:
+    """Every tensor in attention is thin except the one in the middle."""
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(11.5, 4.6))
+    _blank(ax, (0, 26), (-2.6, 7.6))
+
+    def strip(x, label, sub):
+        ax.add_patch(Rectangle((x, 0.8), 1.5, 5.4, facecolor=MEMORY_SOFT,
+                               edgecolor=MEMORY, alpha=0.8))
+        ax.text(x + 0.75, 6.6, label, ha="center", color=INK,
+                fontsize=12, fontweight="bold")
+        ax.text(x + 0.75, 0.2, sub, ha="center", va="top", color=MUTED, fontsize=10)
+
+    strip(0.6, "Q", "8192 x 128")
+    strip(2.9, "K", "8192 x 128")
+    strip(5.2, "V", "8192 x 128")
+
+    ax.text(7.6, 3.5, "give", ha="center", va="center", color=MUTED, fontsize=11)
+
+    # the middle object, drawn wide because it is
+    ax.add_patch(Rectangle((9.0, 0.8), 8.2, 5.4, facecolor=COMPUTE,
+                           edgecolor=COMPUTE, alpha=0.9))
+    ax.text(13.1, 6.6, "S = Q K$^\\top$", ha="center", color=INK,
+            fontsize=12, fontweight="bold")
+    ax.text(13.1, 3.5, "8192 x 8192", ha="center", va="center",
+            color=CANVAS, fontsize=13, fontweight="bold")
+    ax.text(13.1, 0.2, "128 MiB", ha="center", va="top", color=COMPUTE,
+            fontsize=11, fontweight="bold")
+
+    ax.text(18.6, 3.5, "then", ha="center", va="center", color=MUTED, fontsize=11)
+
+    strip(20.4, "O", "8192 x 128")
+    ax.text(23.4, 3.5, "2 MiB", ha="left", va="center", color=MUTED, fontsize=11)
+
+    ax.text(13.0, -1.5,
+            "the inputs and the output are all thin. only the intermediate is square,\n"
+            "and it is 64x wider than anything that produced it",
+            ha="center", va="center", color=INK, fontsize=12, fontweight="bold")
+    ax.set_title("The shape of the problem", pad=14)
+    save(fig, BLOG03, "fig-attention-shapes")
+
+
+def fig_softmax_wall() -> None:
+    """A tile sees a slice; softmax needs the row."""
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(11, 4.0))
+    _blank(ax, (-2.4, 34), (-3.0, 4.2))
+
+    # the full row of scores
+    for i in range(32):
+        inside = i < 4
+        ax.add_patch(Rectangle((i, 1.6), 0.9, 1.2,
+                               facecolor=COMPUTE if inside else CANVAS,
+                               edgecolor=COMPUTE if inside else DIVIDER,
+                               alpha=0.9 if inside else 1.0))
+    ax.text(-0.4, 2.2, "one row\nof scores", ha="right", va="center",
+            color=INK, fontsize=10.5)
+
+    # what the tile can see
+    ax.add_patch(Rectangle((-0.15, 1.35), 4.2, 1.7, facecolor="none",
+                           edgecolor=COMPUTE, lw=2.4))
+    ax.text(1.95, 3.5, "what this tile holds", ha="center", color=COMPUTE,
+            fontsize=11, fontweight="bold")
+
+    # what softmax demands
+    ax.add_patch(FancyArrowPatch((0.2, 0.9), (31.7, 0.9), arrowstyle="<->",
+                                 mutation_scale=18, color=MEMORY, lw=2))
+    ax.text(16, 0.25, "softmax needs the maximum and the sum over ALL of this",
+            ha="center", va="top", color=MEMORY, fontsize=11.5, fontweight="bold")
+
+    ax.text(16, -1.5,
+            "you hold 64 of 8,192 scores. you cannot subtract a maximum you have not seen,\n"
+            "and you cannot divide by a total that does not exist yet",
+            ha="center", va="center", color=INK, fontsize=11.5)
+    ax.set_title("Why the matmul tiles but the softmax does not", pad=12)
+    save(fig, BLOG03, "fig-softmax-wall")
+
+
+def fig_block_sweep() -> None:
+    """The sweep, and what it does to the accumulator.
+
+    The budget table lives in the prose, so this figure answers the other
+    question instead: after one tile, how much of O exists?
+    """
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(11.5, 5.6))
+    _blank(ax, (-3.4, 18.4), (-4.6, 6.4))
+
+    n = 8
+    done, now = 3, 3
+
+    # --- the row of S tiles this query block is sweeping ---
+    ax.text(-0.6, 4.75, "one\nQ block", ha="right", va="center",
+            color=MEMORY, fontsize=10.5, fontweight="bold")
+    for i in range(n):
+        if i < done:
+            fc, ec, ls = COMPUTE_SOFT, COMPUTE, "-"
+        elif i == now:
+            fc, ec, ls = COMPUTE, COMPUTE, "-"
+        else:
+            fc, ec, ls = "none", DIVIDER, "--"
+        ax.add_patch(Rectangle((i * 2.1, 4.1), 1.85, 1.3,
+                               facecolor=fc, edgecolor=ec, ls=ls))
+    ax.text(now * 2.1 + 0.92, 4.75, "now", ha="center", va="center",
+            color=CANVAS, fontsize=9.5, fontweight="bold")
+    ax.text(8.4, 6.0, "S tiles, one per K/V block, swept left to right",
+            ha="center", color=COMPUTE, fontsize=11)
+    ax.text(8.4, 3.5, "128 of them at 8K tokens", ha="center", va="top",
+            color=MUTED, fontsize=10)
+
+    # --- the accumulator underneath, same shape throughout ---
+    labels = [
+        (0.0, "after tile 1", "every row holds a\npartial value", 0.25),
+        (6.2, "after tile 4", "every row still\npartial", 0.55),
+        (12.4, "after tile 128", "complete,\nnot yet divided", 1.0),
+    ]
+    for x, when, state, maturity in labels:
+        # intensity, not a fill level: a partially filled box would wrongly
+        # suggest part of the block is finished while the rest is empty
+        ax.add_patch(Rectangle((x, 0.4), 4.4, 1.5, facecolor=MEMORY_SOFT,
+                               edgecolor=MEMORY, alpha=maturity))
+        ax.text(x + 2.2, 2.25, when, ha="center", color=INK, fontsize=10.5,
+                fontweight="bold")
+        ax.text(x + 2.2, -0.05, state, ha="center", va="top", color=MUTED,
+                fontsize=9.5)
+        if x < 12:
+            ax.add_patch(FancyArrowPatch((x + 4.7, 1.15), (x + 5.9, 1.15),
+                                         arrowstyle="->", mutation_scale=16,
+                                         color=MUTED, lw=1.6))
+
+    ax.text(17.4, 1.15, "÷ $\\ell$", ha="left", va="center", color=COMPUTE,
+            fontsize=13, fontweight="bold")
+
+    ax.text(8.4, -2.4,
+            "the accumulator is full size from the first step.\n"
+            "what changes across the sweep is its value, not its shape",
+            ha="center", va="center", color=INK, fontsize=12, fontweight="bold")
+    ax.text(8.4, -3.9,
+            "each tile adds a partial contribution to every row of the block, so no row is finished until the last tile lands",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+    save(fig, BLOG03, "fig-block-sweep")
+
+
+def fig_online_softmax() -> None:
+    """When the running maximum moves, one multiply repairs everything banked."""
+    house_style()
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+
+    tile1 = np.array([2.0, 1.0, 3.0, 0.5])
+    tile2 = np.array([5.0, 2.5, 1.0, 3.5])
+
+    # before: tile 1 banked on the scale of its own maximum, 3.0
+    ax = axes[0]
+    p1 = np.exp(tile1 - tile1.max())
+    ax.bar(range(4), p1, color=MEMORY, alpha=0.9, width=0.6)
+    for i, (s, p) in enumerate(zip(tile1, p1)):
+        ax.text(i, p + 0.03, f"{p:.2f}", ha="center", color=INK, fontsize=10.5)
+    ax.set_xticks(range(4))
+    ax.set_xticklabels([f"{s:g}" for s in tile1])
+    ax.set_xlabel("tile 1 scores")
+    ax.set_ylabel("banked term  $e^{s-m}$")
+    ax.set_title("Running max $m=3$,  denominator $=1.585$", fontsize=12)
+    ax.grid(axis="x", visible=False)
+
+    # after: the max jumps to 5, so every banked term takes the same factor
+    ax = axes[1]
+    corrected = p1 * np.exp(3.0 - 5.0)
+    p2 = np.exp(tile2 - 5.0)
+    ax.bar(range(4), corrected, color=MEMORY, alpha=0.45, width=0.6)
+    ax.bar(range(4, 8), p2, color=COMPUTE, alpha=0.9, width=0.6)
+    for i, p in enumerate(np.concatenate([corrected, p2])):
+        ax.text(i, p + 0.03, f"{p:.2f}", ha="center", color=INK, fontsize=10)
+    ax.set_xticks(range(8))
+    ax.set_xticklabels([f"{s:g}" for s in np.concatenate([tile1, tile2])], fontsize=9)
+    ax.set_xlabel("all eight scores")
+    ax.set_title("Running max $m=5$,  denominator $=1.538$", fontsize=12)
+    ax.grid(axis="x", visible=False)
+    ax.annotate("these four scaled by\n$e^{3-5}=0.135$, one multiply",
+                xy=(1.5, 0.17), xytext=(0.55, 0.72),
+                color=MEMORY, fontsize=11, fontweight="bold",
+                arrowprops=dict(arrowstyle="->", color=MEMORY, lw=1.6))
+
+    fig.suptitle("Online softmax: the banked terms were all wrong by the same factor",
+                 fontsize=14, fontweight="bold", color=INK, y=1.04)
+    save(fig, BLOG03, "fig-online-softmax")
+
+
+def fig_memory_traffic() -> None:
+    """Score-matrix traffic across HBM. The unambiguous claim: it goes to zero.
+
+    Deliberately counts only S, not total traffic. FlashAttention still re-reads
+    K and V once per query block, so a total-traffic comparison depends on the
+    block size and is a much smaller ratio than this figure would imply.
+    """
+    house_style()
+    fig, ax = plt.subplots(figsize=(8.6, 4.2))
+
+    lengths = [1024, 8192, 32768]
+    labels = ["1K tokens", "8K tokens", "32K tokens"]
+    naive = [3 * n**2 for n in lengths]
+
+    x = np.arange(len(lengths))
+    ax.bar(x, naive, color=MEMORY, alpha=0.9, width=0.45)
+    for i, v in enumerate(naive):
+        ax.text(i, v * 1.35, f"{v / 1e9:.2f}B" if v > 1e9 else f"{v / 1e6:.0f}M",
+                ha="center", color=INK, fontsize=12, fontweight="bold")
+        ax.text(i + 0.45, v * 0.05, "none", ha="center", va="bottom",
+                color=COMPUTE, fontsize=11.5, fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_yscale("log")
+    ax.set_ylim(1e5, 1e11)
+    ax.set_ylabel("score-matrix elements crossing HBM  (log scale)")
+    ax.set_title("What the naive kernel moves, and what FlashAttention moves")
+    ax.text(0.985, 0.93,
+            "teal: naive, $3N^2$ elements\nterracotta: FlashAttention, zero",
+            transform=ax.transAxes, ha="right", va="top", fontsize=10.5, color=MUTED)
+    ax.grid(axis="x", visible=False)
+    save(fig, BLOG03, "fig-memory-traffic")
+
+
+def fig_peak_fraction() -> None:
+    """The number this series tracks: fraction of peak arithmetic sustained."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(8.6, 3.8))
+
+    # only figures the papers actually report; no interpolated baseline
+    gens = ["FlashAttention 1\nA100", "FlashAttention 2\nA100",
+            "FlashAttention 3\nH100", "FlashAttention 4\nB200"]
+    low = np.array([25, 50, 75, 71])
+    high = np.array([40, 73, 75, 71])
+
+    y = np.arange(len(gens))
+    ax.barh(y, high - low + 1.2, left=low, color=COMPUTE, alpha=0.9, height=0.55)
+    for i, (lo, hi) in enumerate(zip(low, high)):
+        label = f"{lo}-{hi}%" if lo != hi else f"{hi}%"
+        ax.text(hi + 3, i, label, va="center", color=INK, fontsize=11.5,
+                fontweight="bold")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(gens, fontsize=10.5)
+    ax.set_xlim(0, 100)
+    ax.set_xticks([0, 25, 50, 75, 100])
+    ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
+    ax.set_xlabel("fraction of the chip's peak arithmetic actually sustained")
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_title("The number this series tracks")
+    save(fig, BLOG03, "fig-peak-fraction")
+
+
 BUILDERS: dict[str, list] = {
     "01": [
         fig_where_time_goes,
@@ -880,6 +1263,17 @@ BUILDERS: dict[str, list] = {
         fig_h100_vs_h200,
         fig_precision_ladder,
         fig_interconnect,
+    ],
+    "03": [
+        fig_attention_shapes,
+        fig_three_passes,
+        fig_nsquared_growth,
+        fig_tiling,
+        fig_softmax_wall,
+        fig_block_sweep,
+        fig_online_softmax,
+        fig_memory_traffic,
+        fig_peak_fraction,
     ],
 }
 

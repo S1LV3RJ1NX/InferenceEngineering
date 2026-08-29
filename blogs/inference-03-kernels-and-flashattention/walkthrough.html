@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlashAttention, step by step · Prathamesh Saraf</title>
+    <meta name="robots" content="index,follow" />
+    <style>
+      :root {
+        --canvas: #fafafa;
+        --surface: #ffffff;
+        --ink: #0a0a0a;
+        --muted: #525252;
+        --subtle: #737373;
+        --accent: #c8421a;
+        --accent-soft: #f6ded6;
+        --teal: #1f7a8c;
+        --teal-soft: #dcebee;
+        --divider: #e5e5e5;
+        --hairline: #ededed;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: "Geist Variable", Geist, Inter, ui-sans-serif, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+      .wrap { max-width: 60rem; margin: 0 auto; padding: 18px 20px 28px; }
+      .mono {
+        font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, "SF Mono",
+          Menlo, Monaco, Consolas, monospace;
+      }
+      .eyebrow {
+        font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+        font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--subtle);
+      }
+      h1 { font-size: 17px; margin: 2px 0 0; letter-spacing: -0.012em; }
+
+      .bar {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        border-bottom: 1px solid var(--divider); padding-bottom: 12px; margin-bottom: 14px;
+      }
+      .bar .spacer { flex: 1 1 auto; }
+      button {
+        font: inherit; font-size: 12.5px; cursor: pointer;
+        background: var(--surface); color: var(--ink);
+        border: 1px solid var(--divider); border-radius: 6px; padding: 5px 11px;
+      }
+      button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+      button:disabled { opacity: 0.38; cursor: default; }
+      .counter {
+        font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+        font-size: 11.5px; color: var(--muted); min-width: 74px; text-align: center;
+      }
+      .track { height: 2px; background: var(--hairline); border-radius: 2px; margin-bottom: 16px; }
+      .track > div { height: 2px; background: var(--accent); border-radius: 2px; transition: width 180ms ease; }
+
+      .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+      @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+
+      .panel {
+        background: var(--surface); border: 1px solid var(--divider);
+        border-radius: 8px; padding: 12px 13px 13px;
+      }
+      .panel + .panel { margin-top: 12px; }
+      .panel h2 {
+        font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+        font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--subtle); margin: 0 0 9px; font-weight: 500;
+      }
+      .row { display: flex; gap: 22px 26px; flex-wrap: wrap; align-items: flex-start; }
+      .mat { display: inline-block; }
+      .mat .name {
+        font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+        font-size: 11px; color: var(--muted); margin-bottom: 6px; display: block;
+        letter-spacing: 0.01em;
+      }
+      .mat .name .dim { color: var(--subtle); font-size: 10px; }
+      /* square-bracket delimiters, so a grid of numbers reads as a matrix */
+      .brk { position: relative; display: inline-block; padding: 4px 10px; }
+      .brk::before, .brk::after {
+        content: ""; position: absolute; top: 0; bottom: 0; width: 5px;
+        border-top: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+      }
+      .brk::before { left: 0; border-left: 1.5px solid var(--muted); }
+      .brk::after { right: 0; border-right: 1.5px solid var(--muted); }
+      table.grid { border-collapse: collapse; }
+      table.grid td {
+        font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+        font-size: 11.5px; text-align: right; padding: 4px 9px; height: 25px;
+        border: 1px solid var(--divider); min-width: 46px; color: var(--muted);
+        background: var(--surface); transition: background 160ms ease, color 160ms ease;
+      }
+      td.on   { background: var(--teal-soft); color: var(--ink); border-color: #bcd7dd; }
+      td.hot  { background: var(--accent-soft); color: var(--ink); border-color: #eec4b7; }
+      td.dim  { color: #c9c9c9; background: #fcfcfc; }
+      td.chg  { box-shadow: inset 0 0 0 2px var(--accent); color: var(--ink); font-weight: 600; }
+      tr.cut td { border-bottom: 2px solid var(--subtle); }
+      td.cutr { border-right: 2px solid var(--subtle); }
+
+      .caption {
+        margin-top: 14px; border-left: 2px solid var(--accent);
+        padding: 2px 0 2px 12px; color: var(--ink); font-size: 13.5px;
+      }
+      .caption b { font-weight: 600; }
+      .caption .sub { color: var(--muted); display: block; margin-top: 5px; font-size: 12.5px; line-height: 1.5; }
+      .legend { margin-top: 12px; font-size: 11.5px; color: var(--subtle); display: flex; gap: 14px; flex-wrap: wrap; }
+      .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; vertical-align: baseline; margin-right: 5px; }
+      .note { font-size: 11.5px; color: var(--subtle); margin-top: 10px; }
+      .work {
+        font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+        font-size: 11.5px; line-height: 1.65; color: var(--muted);
+        white-space: pre; overflow-x: auto;
+      }
+      .work .lbl { color: var(--ink); font-weight: 600; }
+      .work .res { color: var(--ink); }
+      .work .tag { color: var(--subtle); }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="bar">
+        <div>
+          <span class="eyebrow">Inference Engineering · Post 03</span>
+          <h1>FlashAttention, one query block at a time</h1>
+        </div>
+        <span class="spacer"></span>
+        <button id="prev" aria-label="Previous step">← Prev</button>
+        <span class="counter" id="counter">1 / 1</span>
+        <button id="next" aria-label="Next step">Next →</button>
+      </div>
+      <div class="track"><div id="track"></div></div>
+
+      <div class="cols">
+        <div>
+          <div class="panel">
+            <h2>In HBM — the full tensors</h2>
+            <div class="row" id="inputs"></div>
+            <div class="note">
+              4 tokens, head dimension 3, blocks of 2. The 1/√d scale is left off so the
+              scores stay whole numbers.
+            </div>
+          </div>
+          <div class="panel">
+            <h2>The score matrix, which is never stored</h2>
+            <div id="smat"></div>
+            <div class="note">
+              Shown only so you can see where the live tile sits. Solid cells are on chip
+              right now; everything faint has either been discarded or not computed yet.
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>On chip — SRAM</h2>
+            <div class="row" id="chip"></div>
+          </div>
+          <div class="panel">
+            <h2>Accumulators for the current query block</h2>
+            <div class="row" id="acc"></div>
+          </div>
+          <div class="panel" id="workpanel">
+            <h2>How O was built this step</h2>
+            <div class="work" id="work"></div>
+          </div>
+          <div class="panel" id="outpanel">
+            <h2>Written back to HBM</h2>
+            <div class="row" id="out"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="caption" id="caption"></div>
+
+      <div class="legend">
+        <span><span class="sw" style="background:var(--teal-soft);border:1px solid #bcd7dd"></span>resident on chip</span>
+        <span><span class="sw" style="background:var(--accent-soft);border:1px solid #eec4b7"></span>this step's tile</span>
+        <span><span class="sw" style="box-shadow:inset 0 0 0 1.5px var(--accent);background:#fff"></span>changed this step</span>
+        <span>← → arrow keys to step</span>
+      </div>
+    </div>
+
+    <script>
+      const Q = [[1,0,2],[0,1,1],[2,1,0],[1,1,1]];
+      const K = [[1,1,0],[2,0,1],[0,1,1],[1,1,1]];
+      const V = [[1,2,0],[0,1,3],[2,0,1],[1,1,1]];
+      const B = 2, N = 4, D = 3, NB = N / B;
+
+      const f = (x) => (Number.isInteger(x) ? String(x) : x.toFixed(3));
+      const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
+      const clone = (m) => m.map((r) => r.slice());
+
+      // full score matrix, for display only
+      const S = Q.map((q) => K.map((k) => dot(q, k)));
+
+      // Build every step of the tiled forward pass, recording state as it goes.
+      const steps = [];
+      const finalO = [];
+
+      steps.push({
+        kind: "intro",
+        qb: null, kb: null,
+        caption: "<b>Nothing is on the chip yet.</b> Q, K and V sit in HBM. The score matrix S does not exist at all, and never will in full.",
+        sub: "At real sizes S is 128 MiB against 228 KiB of SRAM, which is the entire reason for what follows.",
+      });
+
+      for (let qb = 0; qb < NB; qb++) {
+        const rows = [qb * B, qb * B + 1];
+        let m = [-Infinity, -Infinity];
+        let l = [0, 0];
+        let O = [[0,0,0],[0,0,0]];
+
+        steps.push({
+          kind: "init", qb, kb: null,
+          m: m.slice(), l: l.slice(), O: clone(O), done: finalO.map((r) => r.slice()),
+          caption: `<b>Load Q block ${qb + 1}</b> (tokens ${rows[0]+1} and ${rows[1]+1}) and start its accumulators.`,
+          sub: "Running max starts at −∞, denominator at 0, output at zeros. These three stay in SRAM until this block is finished.",
+          chg: { m: [0,1], l: [0,1], O: "all" },
+        });
+
+        for (let kb = 0; kb < NB; kb++) {
+          const cols = [kb * B, kb * B + 1];
+          const tile = rows.map((i) => cols.map((j) => S[i][j]));
+
+          steps.push({
+            kind: "tile", qb, kb, tile,
+            m: m.slice(), l: l.slice(), O: clone(O), done: finalO.map((r) => r.slice()),
+            caption: `<b>Stream in K and V block ${kb + 1}</b> and form the score tile.`,
+            sub: `Each entry is one query row against one key row, so this 2×2 tile is final the moment it is computed. It is built in SRAM and never written out.`,
+          });
+
+          const mOld = m.slice();
+          const tileMax = tile.map((r) => Math.max(...r));
+          const mNew = m.map((v, i) => Math.max(v, tileMax[i]));
+          const corr = mOld.map((v, i) => (v === -Infinity ? 0 : Math.exp(v - mNew[i])));
+          const P = tile.map((r, i) => r.map((s) => Math.exp(s - mNew[i])));
+          const lNew = l.map((v, i) => v * corr[i] + P[i].reduce((a, b) => a + b, 0));
+          const ONew = O.map((r, i) =>
+            r.map((v, c) => v * corr[i] + cols.reduce((s, j, jj) => s + P[i][jj] * V[j][c], 0))
+          );
+
+          const first = kb === 0;
+
+          const vec = (a) => "[" + a.map((x) => x.toFixed(3).padStart(6)).join(", ") + "]";
+          let work = "";
+          rows.forEach((_, i) => {
+            work += `<span class="lbl">output row ${rows[i] + 1}</span>\n`;
+            if (first) {
+              work += `  <span class="tag">nothing carried over, this is the first key block</span>\n`;
+            } else {
+              work += `  ${corr[i].toFixed(3)} x ${vec(O[i])}   <span class="tag">O so far, rescaled</span>\n`;
+            }
+            cols.forEach((j, jj) => {
+              const sign = first && jj === 0 ? " " : "+";
+              work += `${sign} ${P[i][jj].toFixed(3)} x ${vec(V[j])}   <span class="tag">weight on v${j + 1}</span>\n`;
+            });
+            work += `= <span class="res">${vec(ONew[i])}</span>\n`;
+            if (i === 0) work += "\n";
+          });
+
+          steps.push({
+            kind: "update", qb, kb, tile, P,
+            m: mNew.slice(), l: lNew.slice(), O: clone(ONew), done: finalO.map((r) => r.slice()),
+            caption: first
+              ? `<b>Update the accumulators.</b> Row maxima become ${f(mNew[0])} and ${f(mNew[1])}.`
+              : `<b>The running maximum moved</b>, so everything banked gets one multiply.`,
+            sub: first
+              ? "The old max was −∞, so the correction factor is 0 and there is nothing to repair yet. The tile's exponentials go into ℓ, and its weighted values into O."
+              : `Correction factors ${f(corr[0])} and ${f(corr[1])} rescale ℓ <em>and</em> O together, then this tile is added on the new scale. O is still unnormalized.`,
+            chg: { m: [0,1], l: [0,1], O: "all" },
+            work,
+          });
+
+          m = mNew; l = lNew; O = ONew;
+        }
+
+        const normalized = O.map((r, i) => r.map((v) => v / l[i]));
+        rows.forEach((r, i) => { finalO[r] = normalized[i]; });
+
+        steps.push({
+          kind: "divide", qb, kb: null,
+          m: m.slice(), l: l.slice(), O: clone(normalized), done: finalO.map((r) => r.slice()),
+          caption: `<b>Every key block has been seen, so divide once by ℓ</b> and write rows ${rows[0]+1} and ${rows[1]+1} out to HBM.`,
+          sub: "This is the only division in the whole algorithm, and the only time this block touches HBM after being loaded.",
+          chg: { O: "all" },
+        });
+      }
+
+      const ref = Q.map((q, i) => {
+        const s = K.map((k) => dot(q, k));
+        const mx = Math.max(...s);
+        const e = s.map((x) => Math.exp(x - mx));
+        const z = e.reduce((a, b) => a + b, 0);
+        return V[0].map((_, c) => e.reduce((acc, w, j) => acc + (w / z) * V[j][c], 0));
+      });
+      const maxErr = Math.max(...finalO.flatMap((r, i) => r.map((v, c) => Math.abs(v - ref[i][c]))));
+
+      steps.push({
+        kind: "done", qb: null, kb: null,
+        done: finalO.map((r) => r.slice()),
+        caption: `<b>Done, and it matches the three-pass version</b> to ${maxErr.toExponential(1)}.`,
+        sub: "The full 4×4 score matrix was computed, every entry of it, but only ever 2×2 at a time. It never touched HBM.",
+      });
+
+      // ---------- rendering ----------
+      const el = (id) => document.getElementById(id);
+
+      function grid(name, data, opts = {}) {
+        const { cls = () => "", rowCut = -1, colCut = -1, fmt = f, dim = "" } = opts;
+        const label = dim ? `${name} <span class="dim">${dim}</span>` : name;
+        let h = `<div class="mat"><span class="name">${label}</span><span class="brk"><table class="grid"><tbody>`;
+        data.forEach((row, i) => {
+          h += `<tr class="${i === rowCut ? "cut" : ""}">`;
+          row.forEach((v, j) => {
+            const extra = j === colCut ? " cutr" : "";
+            const val = v === -Infinity ? "-inf" : fmt(v);
+            h += `<td class="${cls(i, j)}${extra}">${val}</td>`;
+          });
+          h += "</tr>";
+        });
+        return h + "</tbody></table></span></div>";
+      }
+
+      function render(n) {
+        const s = steps[n];
+        const rows = s.qb === null ? [] : [s.qb * B, s.qb * B + 1];
+        const cols = s.kb === null || s.kind === "init" || s.kind === "divide"
+          ? [] : [s.kb * B, s.kb * B + 1];
+
+        const inRows = (i) => rows.includes(i);
+        const inCols = (i) => cols.includes(i);
+
+        el("inputs").innerHTML =
+          grid("Q", Q, { dim: "4x3", cls: (i) => (inRows(i) ? "on" : "dim"), rowCut: 1 }) +
+          grid("K", K, { dim: "4x3", cls: (i) => (inCols(i) ? "on" : "dim"), rowCut: 1 }) +
+          grid("V", V, { dim: "4x3", cls: (i) => (inCols(i) ? "on" : "dim"), rowCut: 1 });
+
+        el("smat").innerHTML = grid("S", S, {
+          dim: "4x4, never materialized",
+          cls: (i, j) => (inRows(i) && inCols(j) ? "hot" : "dim"),
+          rowCut: 1, colCut: 1,
+        });
+
+        let chip = "";
+        if (s.qb !== null) {
+          chip += grid(`Q block ${s.qb + 1}`, rows.map((i) => Q[i]), { cls: () => "on" });
+        }
+        if (cols.length) {
+          chip += grid(`K block ${s.kb + 1}`, cols.map((i) => K[i]), { cls: () => "on" });
+          chip += grid(`V block ${s.kb + 1}`, cols.map((i) => V[i]), { cls: () => "on" });
+        }
+        if (s.tile) chip += grid("score tile", s.tile, { cls: () => "hot" });
+        if (s.P) chip += grid("exp(tile − m)", s.P, { cls: () => "hot" });
+        el("chip").innerHTML = chip || "<span style='color:var(--subtle);font-size:12.5px'>nothing resident</span>";
+
+        if (s.m) {
+          const chg = s.chg || {};
+          el("acc").innerHTML =
+            grid("running max m", s.m.map((v) => [v]), { cls: () => (chg.m ? "chg" : "") }) +
+            grid("denominator ℓ", s.l.map((v) => [v]), { cls: () => (chg.l ? "chg" : "") }) +
+            grid(s.kind === "divide" ? "O ÷ ℓ, final" : "O, unnormalized", s.O, {
+              cls: () => (chg.O ? "chg" : ""),
+            });
+        } else {
+          el("acc").innerHTML = "<span style='color:var(--subtle);font-size:12.5px'>no block in flight</span>";
+        }
+
+        const done = s.done || [];
+        el("out").innerHTML = done.length
+          ? grid("O", Array.from({ length: N }, (_, i) => done[i] || Array(D).fill(null)), {
+              cls: (i) => (done[i] ? "on" : "dim"),
+              fmt: (v) => (v === null ? "·" : f(v)),
+              rowCut: 1,
+            })
+          : "<span style='color:var(--subtle);font-size:12.5px'>nothing written yet</span>";
+
+        if (s.work) {
+          el("workpanel").style.display = "";
+          el("work").innerHTML = s.work;
+        } else {
+          el("workpanel").style.display = "none";
+        }
+
+        el("caption").innerHTML = s.caption + (s.sub ? `<span class="sub">${s.sub}</span>` : "");
+        el("counter").textContent = `${n + 1} / ${steps.length}`;
+        el("track").style.width = `${((n + 1) / steps.length) * 100}%`;
+        el("prev").disabled = n === 0;
+        el("next").disabled = n === steps.length - 1;
+      }
+
+      let cur = 0;
+      const go = (n) => { cur = Math.max(0, Math.min(steps.length - 1, n)); render(cur); };
+      el("prev").addEventListener("click", () => go(cur - 1));
+      el("next").addEventListener("click", () => go(cur + 1));
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); go(cur + 1); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+        if (e.key === "Home") go(0);
+        if (e.key === "End") go(steps.length - 1);
+      });
+      render(0);
+    </script>
+  </body>
+</html>

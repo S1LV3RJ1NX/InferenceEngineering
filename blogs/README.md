@@ -14,6 +14,7 @@ hosting (see [`BLOG_RULES.md`](./BLOG_RULES.md) §7).
 |---|---|---|---|
 | 01 | The Memory Wall: Where the 30 Milliseconds Actually Go | [Source](./inference-01-memory-wall/) | [Read](https://prathameshsaraf.com/blogs/inference-01-memory-wall/) |
 | 02 | Inside the GPU: Why Moving a Byte Costs More Than Multiplying One | [Source](./inference-02-inside-the-gpu/) | [Read](https://prathameshsaraf.com/blogs/inference-02-inside-the-gpu/) |
+| 03 | Kernels and FlashAttention: When the Same Math Runs 7.6x Faster | [Source](./inference-03-kernels-and-flashattention/) | [Read](https://prathameshsaraf.com/blogs/inference-03-kernels-and-flashattention/) |
 
 ## Writing a new post
 

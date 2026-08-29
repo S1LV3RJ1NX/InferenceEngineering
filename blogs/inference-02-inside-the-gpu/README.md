@@ -260,4 +260,4 @@ We spent this post on the machine. We know why it is built this way, why a byte 
 
 But hardware only sets the ceiling. Whether a given workload gets anywhere near it depends on the code that runs on it, and we have already seen how easily that code gives the advantage away. A single divergent branch halves throughput. A scattered access pattern multiplies memory traffic by up to 32. Nothing in the hardware prevents either.
 
-The next post is about the kernels: the code that decides whether those 528 tensor cores are fed or idle, and the techniques that keep data at the fast end of the ladder once it is there.
+That is the [FlashAttention](../inference-03-kernels-and-flashattention/README.md) post, which follows one kernel through four generations. It opens on a fact that should be impossible: two kernels computing identical attention on the same chip, one finishing 7.6 times faster than the other. Since the arithmetic is the same in both, the entire gap has to live in the route the bytes take.
