@@ -134,6 +134,35 @@ Render self-checks as hidden-answer blocks so the reader can self-test first:
 
 Place each check immediately after the section it tests.
 
+### 1d. Answer questions by replacing, not appending
+
+When a reader says a passage is unclear, the instinct is to add a paragraph. Resist it. A section
+that grows every time someone is confused ends up longer *and* harder to read, and the reader who
+was already fine now has more to wade through.
+
+- **Replace the unclear thing rather than explaining it twice.** If the new wording is better,
+  delete the old one. Two explanations of one idea is worse than either alone.
+- **Reach for a table or a figure before a paragraph.** Most "I did not follow that" moments are
+  structural, and structure is what tables and diagrams carry. The rewrite is usually shorter
+  than what it replaces.
+- **One presentation per idea.** A worked example, a term-by-term table, and a matrix diagram of
+  the same arithmetic is two too many. Pick the one that carries the most and cut the rest.
+- **If it takes three paragraphs, the structure is wrong.** Long explanations are a symptom, not
+  a fix. Go back and change the order things are introduced in.
+- **After any clarifying edit, check the word count moved the right way.** Sections should
+  usually get shorter as they get clearer.
+
+### 1e. Skippable recaps
+
+From post 03 onward, open each post with a collapsed **"New here?"** block giving the two-minute
+version of what the earlier posts established. Use the same `<details>` mechanism as the checks,
+with a summary line that says explicitly it can be skipped.
+
+This costs a returning reader one line and saves a new reader from bouncing. Keep it to the
+handful of numbers the post actually leans on, written from scratch rather than as a list of
+links: a reader who needed the recap will not follow a link either. Prose and concrete analogies
+belong here more than formulas, since this is the reader's first contact with the ideas.
+
 ### 1c. Attribution
 
 Each post is built from a source video or paper. Credit it once, near the top or in a closing
@@ -226,6 +255,29 @@ Three conventions worth stating, because the obvious choices collide:
   would collide with a hardware symbol here, prefer the clearer local choice: the arithmetic has
   to match, the alphabet does not.
 
+### Display math must not straddle lines
+
+`remark-math` accepts a display equation in exactly two shapes, and a hybrid of them **fails
+silently**: the math does not render, raw `$$` leaks into the page, and the build still passes.
+
+```markdown
+$$E = mc^2$$                 <- fine: opening and closing on one line
+
+$$
+\begin{aligned} ... \end{aligned}
+$$                           <- fine: $$ alone on its own lines
+```
+
+What breaks is starting with `$$` plus content on the same line and then continuing onto
+further lines before closing. Prefer two separate one-line equations over one long one, since
+display math does not wrap and a wide equation is clipped on narrow screens anyway.
+
+**Always verify after editing math.** The build will not tell you:
+
+```bash
+grep -c 'katex-error' dist/blogs/<slug>/index.html    # want 0
+```
+
 ### Units
 
 Be explicit and consistent. Use `FLOP/s` for a rate and `FLOPs` for a count. Write bandwidth in
@@ -248,6 +300,10 @@ Two kinds of images, two clear jobs. **Default to SVG.**
 - Every image needs **descriptive alt text** (a sentence, not "figure 1").
 - **Every diagram gets an explanatory paragraph right after it** (including Mermaid), saying
   what it shows and how it ties to the concept just taught.
+- **Never write "the figure below" or "the figure above".** Editing reorders sections, and the
+  nearest figure quietly becomes the wrong one while the sentence still reads fine. Refer to a
+  figure that is not adjacent by **section number** ("the grid Section 2.5 draws"), and to an
+  adjacent one by what it shows ("the figure puts capacity on a log axis").
 
 ### Drawing structure
 
@@ -348,12 +404,10 @@ SITE="/Users/prathamesh/portfolio/site"
 
 mkdir -p "$SITE/public/blogs/$SLUG" "$SITE/src/content/blog"
 cp blogs/$SLUG/images/* "$SITE/public/blogs/$SLUG/"
-sed -e "s#\./images/#/blogs/$SLUG/#g" \
-    -e 's#\.\./\([a-z0-9-]*\)/README\.md#/blogs/\1#g' \
-    blogs/$SLUG/README.md \
-    > "$SITE/src/content/blog/$SLUG.md"
+uv run python blogs/assets/sync.py <slug>
 
-cd "$SITE" && npm run build
+# rewrites image paths, sibling-post links, the draft flag, and any
+# <!--walkthrough--> marker into its iframe. README stays GitHub-readable.
 ```
 
 Re-running it is idempotent, so it doubles as the "update a published post" command. Then
@@ -399,6 +453,7 @@ Geist / Geist Mono) so figures and site share one visual language.
       today's real publish date (§3).
 - [ ] Every symbol defined on first use; every formula followed by a plugged-in number (§4).
 - [ ] Every display equation read symbol by symbol, then interpreted (§4).
+- [ ] No display equation straddles lines; rendered page has zero `katex-error` (§4).
 - [ ] Every acronym and term is defined before the first figure or Mermaid node that uses it,
       not after (§1a, §5).
 - [ ] Repeating hardware is drawn as N copies of one block, not as a parts list; any shared
