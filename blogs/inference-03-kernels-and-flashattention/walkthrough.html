@@ -104,7 +104,7 @@
       td.cutr { border-right: 2px solid var(--subtle); }
 
       .caption {
-        margin-top: 14px; border-left: 2px solid var(--accent);
+        border-left: 2px solid var(--accent);
         padding: 2px 0 2px 12px; color: var(--ink); font-size: 13.5px;
       }
       .caption b { font-weight: 600; }
@@ -148,12 +148,8 @@
             </div>
           </div>
           <div class="panel">
-            <h2>The score matrix, which is never stored</h2>
-            <div id="smat"></div>
-            <div class="note">
-              Shown only so you can see where the live tile sits. Solid cells are on chip
-              right now; everything faint has either been discarded or not computed yet.
-            </div>
+            <h2>What happens on this step</h2>
+            <div class="caption" id="caption"></div>
           </div>
         </div>
 
@@ -176,8 +172,6 @@
           </div>
         </div>
       </div>
-
-      <div class="caption" id="caption"></div>
 
       <div class="legend">
         <span><span class="sw" style="background:var(--teal-soft);border:1px solid #bcd7dd"></span>resident on chip</span>
@@ -222,7 +216,7 @@
           m: m.slice(), l: l.slice(), O: clone(O), done: finalO.map((r) => r.slice()),
           caption: `<b>Load Q block ${qb + 1}</b> (tokens ${rows[0]+1} and ${rows[1]+1}) and start its accumulators.`,
           sub: "Running max starts at −∞, denominator at 0, output at zeros. These three stay in SRAM until this block is finished.",
-          chg: { m: [0,1], l: [0,1], O: "all" },
+          chg: { m: [true, true], l: [true, true], O: O.map((r) => r.map(() => true)) },
         });
 
         for (let kb = 0; kb < NB; kb++) {
@@ -255,7 +249,10 @@
             if (first) {
               work += `  <span class="tag">nothing carried over, this is the first key block</span>\n`;
             } else {
-              work += `  ${corr[i].toFixed(3)} x ${vec(O[i])}   <span class="tag">O so far, rescaled</span>\n`;
+              const tag = corr[i] === 1
+                ? "O as is, this row's max did not move"
+                : "O so far, rescaled";
+              work += `  ${corr[i].toFixed(3)} x ${vec(O[i])}   <span class="tag">${tag}</span>\n`;
             }
             cols.forEach((j, jj) => {
               const sign = first && jj === 0 ? " " : "+";
@@ -274,7 +271,11 @@
             sub: first
               ? "The old max was −∞, so the correction factor is 0 and there is nothing to repair yet. The tile's exponentials go into ℓ, and its weighted values into O."
               : `Correction factors ${f(corr[0])} and ${f(corr[1])} rescale ℓ <em>and</em> O together, then this tile is added on the new scale. O is still unnormalized.`,
-            chg: { m: [0,1], l: [0,1], O: "all" },
+            chg: {
+              m: mNew.map((v, i) => v !== m[i]),
+              l: lNew.map((v, i) => Math.abs(v - l[i]) > 1e-12),
+              O: ONew.map((r, i) => r.map((v, c) => Math.abs(v - O[i][c]) > 1e-12)),
+            },
             work,
           });
 
@@ -289,7 +290,7 @@
           m: m.slice(), l: l.slice(), O: clone(normalized), done: finalO.map((r) => r.slice()),
           caption: `<b>Every key block has been seen, so divide once by ℓ</b> and write rows ${rows[0]+1} and ${rows[1]+1} out to HBM.`,
           sub: "This is the only division in the whole algorithm, and the only time this block touches HBM after being loaded.",
-          chg: { O: "all" },
+          chg: { O: normalized.map((r, i) => r.map((v, c) => Math.abs(v - O[i][c]) > 1e-12)) },
         });
       }
 
@@ -342,12 +343,6 @@
           grid("K", K, { dim: "4x3", cls: (i) => (inCols(i) ? "on" : "dim"), rowCut: 1 }) +
           grid("V", V, { dim: "4x3", cls: (i) => (inCols(i) ? "on" : "dim"), rowCut: 1 });
 
-        el("smat").innerHTML = grid("S", S, {
-          dim: "4x4, never materialized",
-          cls: (i, j) => (inRows(i) && inCols(j) ? "hot" : "dim"),
-          rowCut: 1, colCut: 1,
-        });
-
         let chip = "";
         if (s.qb !== null) {
           chip += grid(`Q block ${s.qb + 1}`, rows.map((i) => Q[i]), { cls: () => "on" });
@@ -362,11 +357,16 @@
 
         if (s.m) {
           const chg = s.chg || {};
+          const mark = (flags) => (i, j) => {
+            if (!flags) return "";
+            const cell = Array.isArray(flags[i]) ? flags[i][j] : flags[i];
+            return cell ? "chg" : "";
+          };
           el("acc").innerHTML =
-            grid("running max m", s.m.map((v) => [v]), { cls: () => (chg.m ? "chg" : "") }) +
-            grid("denominator ℓ", s.l.map((v) => [v]), { cls: () => (chg.l ? "chg" : "") }) +
+            grid("running max m", s.m.map((v) => [v]), { cls: mark(chg.m) }) +
+            grid("denominator ℓ", s.l.map((v) => [v]), { cls: mark(chg.l) }) +
             grid(s.kind === "divide" ? "O ÷ ℓ, final" : "O, unnormalized", s.O, {
-              cls: () => (chg.O ? "chg" : ""),
+              cls: mark(chg.O),
             });
         } else {
           el("acc").innerHTML = "<span style='color:var(--subtle);font-size:12.5px'>no block in flight</span>";
