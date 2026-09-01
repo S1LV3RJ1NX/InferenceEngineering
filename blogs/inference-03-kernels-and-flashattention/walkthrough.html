@@ -289,7 +289,7 @@
           kind: "divide", qb, kb: null,
           m: m.slice(), l: l.slice(), O: clone(normalized), done: finalO.map((r) => r.slice()),
           caption: `<b>Every key block has been seen, so divide once by ℓ</b> and write rows ${rows[0]+1} and ${rows[1]+1} out to HBM.`,
-          sub: "This is the only division in the whole algorithm, and the only time this block touches HBM after being loaded.",
+          sub: "The only division in the whole algorithm, and the only time this block touches HBM after being loaded. Version 1 of FlashAttention actually divided on every step; deferring it to here is version 2's first change.",
           chg: { O: normalized.map((r, i) => r.map((v, c) => Math.abs(v - O[i][c]) > 1e-12)) },
         });
       }

@@ -392,6 +392,8 @@ Two things about that equation are easy to get backwards, and both matter.
 
 **No division happens per tile.** It would feel natural to divide by the denominator each time so the numbers look like proper weights, but $\ell$ changes at every tile, so each division would have to be undone by the next one. $O$ therefore stays **unnormalized** for the whole sweep. Only after the last tile, when $m$ is the true row maximum and $\ell$ is the true row sum, does a single $O / \ell$ turn it into the answer.
 
+> **One anachronism, stated plainly.** FlashAttention 1 as published does rescale the output on every inner step, dividing by the running denominator each time. Carrying $O$ unnormalized and dividing once at the end is FlashAttention 2's first change. It is shown that way here because the algorithm is far easier to hold in one piece without a division buried in the loop, and post 04 comes back to price exactly what that per-step division was costing.
+
 **Nothing returns to HBM between tiles.** The running maximum, the denominator and the output accumulator for one $Q$ block sit in SRAM for the entire sweep, which is exactly what the 32 KiB accumulator and 0.5 KiB of running numbers were reserved for in the budget. The $Q$ block is read once at the start and its finished output written once at the end. **What streams past is $K$ and $V$; the accumulators never move.**
 
 So the answer to "how much of the row do we need at once" is two numbers. **Attention never needed the whole row. It needed a running maximum and a running denominator.**
