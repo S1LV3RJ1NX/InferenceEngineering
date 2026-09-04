@@ -1240,6 +1240,201 @@ def fig_peak_fraction() -> None:
     save(fig, BLOG03, "fig-peak-fraction")
 
 
+BLOG04 = "inference-04-flashattention-2"
+
+# NVIDIA A100 SXM, the chip FlashAttention 2 was written for
+A100_TENSOR = 312e12   # dense FP16 tensor-core peak, ops/s
+A100_SCALAR = 19.5e12  # FP32 non-tensor path, ops/s
+A100_SMS = 108
+
+
+def fig_scalar_exchange_rate() -> None:
+    """One scalar operation costs about sixteen matmul operations of machine time."""
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(11, 3.6))
+    _blank(ax, (0, 34), (-2.2, 6.4))
+
+    ratio = round(A100_TENSOR / A100_SCALAR)  # 16
+    span = 28.0
+
+    # the same wall-clock span, spent two different ways
+    ax.add_patch(Rectangle((3, 3.4), span, 1.5, facecolor=MUTED, alpha=0.16,
+                           edgecolor=MUTED))
+    ax.text(3 + span / 2, 4.15, "one scalar operation", ha="center", va="center",
+            color=INK, fontsize=12, fontweight="bold")
+    ax.text(2.4, 4.15, "CUDA\ncores", ha="right", va="center", color=MUTED, fontsize=10)
+
+    w = span / ratio
+    for i in range(ratio):
+        ax.add_patch(Rectangle((3 + i * w + 0.12, 0.9), w - 0.24, 1.5,
+                               facecolor=COMPUTE_SOFT, edgecolor=COMPUTE))
+    ax.text(2.4, 1.65, "tensor\ncores", ha="right", va="center", color=MUTED, fontsize=10)
+    ax.text(3 + span / 2, 0.1, f"{ratio} matrix operations fit in the same time",
+            ha="center", va="top", color=COMPUTE, fontsize=12, fontweight="bold")
+
+    ax.text(17, 5.8,
+            f"A100: {A100_TENSOR/1e12:.0f} trillion matmul ops/s against "
+            f"{A100_SCALAR/1e12:.1f} trillion scalar ops/s",
+            ha="center", color=INK, fontsize=12, fontweight="bold")
+    ax.text(17, -1.7,
+            "every rescale and division the kernel cannot avoid is paid for at this rate",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+    save(fig, BLOG04, "fig-scalar-exchange-rate")
+
+
+def fig_block_occupancy() -> None:
+    """Blocks are what fills multiprocessors, and version 1 did not make enough."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.4))
+
+    cols, rows = 12, 9  # 108 cells, one per A100 multiprocessor
+    panels = [
+        (axes[0], 32, "FlashAttention 1", "batch 2 x 16 heads = 32 blocks"),
+        (axes[1], A100_SMS, "FlashAttention 2", "query blocks join the count, so the grid fills"),
+    ]
+    for ax, live, title, note in panels:
+        _blank(ax, (-0.6, cols + 0.6), (-2.4, rows + 1.6))
+        for r in range(rows):
+            for c in range(cols):
+                on = r * cols + c < live
+                ax.add_patch(Rectangle((c + 0.08, rows - 1 - r + 0.08), 0.84, 0.84,
+                                       facecolor=COMPUTE_SOFT if on else "none",
+                                       edgecolor=COMPUTE if on else DIVIDER))
+        ax.text(cols / 2, rows + 0.9, title, ha="center", color=INK,
+                fontsize=12.5, fontweight="bold")
+        idle = A100_SMS - live
+        busy = f"{live} of {A100_SMS} multiprocessors busy"
+        ax.text(cols / 2, -0.7, busy, ha="center", color=COMPUTE,
+                fontsize=11.5, fontweight="bold")
+        tail = note if idle == 0 else f"{note}, so {idle} sit dark"
+        ax.text(cols / 2, -1.7, tail, ha="center", color=MUTED, fontsize=10)
+
+    fig.suptitle("A block runs on one multiprocessor, so blocks are the unit of occupancy",
+                 fontsize=13.5, fontweight="bold", color=INK, y=1.02)
+    save(fig, BLOG04, "fig-block-occupancy")
+
+
+def fig_warp_split() -> None:
+    """Splitting the contracted index forces a merge; splitting the surviving one does not."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12.4, 4.6))
+
+    for ax, mode in zip(axes, ("K, V", "Q")):
+        _blank(ax, (0, 24), (-2.6, 10.4))
+        splits_k = mode.startswith("K")
+        for w in range(4):
+            y = 7.4 - w * 2.0
+            ax.text(0.4, y + 0.45, f"warp {w}", ha="left", va="center",
+                    color=MUTED, fontsize=10)
+            ax.add_patch(Rectangle((4.2, y), 4.2, 0.95,
+                                   facecolor=MEMORY_SOFT, edgecolor=MEMORY))
+            ax.text(6.3, y + 0.47, f"{mode} slice", ha="center", va="center",
+                    color=INK, fontsize=10.5)
+            if splits_k:
+                ax.annotate("", xy=(12.4, y + 0.47), xytext=(8.6, y + 0.47),
+                            arrowprops=dict(arrowstyle="->", color=COMPUTE, lw=1.6))
+                ax.annotate("", xy=(17.2, y + 0.47), xytext=(15.4, y + 0.47),
+                            arrowprops=dict(arrowstyle="->", color=COMPUTE, lw=1.6))
+            else:
+                ax.annotate("", xy=(17.2, y + 0.47), xytext=(8.6, y + 0.47),
+                            arrowprops=dict(arrowstyle="->", color=COMPUTE, lw=1.6))
+            ax.add_patch(Rectangle((17.5, y), 5.0, 0.95,
+                                   facecolor=COMPUTE_SOFT if not splits_k else "none",
+                                   edgecolor=COMPUTE))
+            label = "partial rows" if splits_k else "finished rows"
+            ax.text(20.0, y + 0.47, label, ha="center", va="center",
+                    color=INK if not splits_k else MUTED, fontsize=10.5)
+
+        if splits_k:
+            ax.add_patch(Rectangle((12.6, 0.6), 2.6, 8.4,
+                                   facecolor=COMPUTE_SOFT, alpha=0.5, edgecolor=COMPUTE))
+            ax.text(13.9, 4.8, "shared\nmemory", ha="center", va="center",
+                    color=INK, fontsize=10.5, fontweight="bold")
+
+        title = ("FlashAttention 1: split K and V" if splits_k
+                 else "FlashAttention 2: split Q")
+        ax.text(12, 9.7, title, ha="center", color=INK, fontsize=12.5,
+                fontweight="bold")
+        tail = ("every warp holds a piece of the same rows,\nso they must trade before anything finishes"
+                if splits_k else
+                "every warp owns whole rows end to end,\nso there is nothing to trade")
+        ax.text(12, -1.9, tail, ha="center", va="center", color=MUTED, fontsize=10.5)
+
+    save(fig, BLOG04, "fig-warp-split")
+
+
+def fig_fa2_across_chips() -> None:
+    """The same kernel, two chips: Hopper moved and the kernel did not."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(8.6, 3.4))
+
+    labels = ["FlashAttention 1\non A100", "FlashAttention 2\non A100",
+              "FlashAttention 2\non H100"]
+    low = np.array([25, 50, 35])
+    high = np.array([40, 73, 35])
+    colors = [MUTED, COMPUTE, COMPUTE]
+    alphas = [0.45, 0.9, 0.45]
+
+    y = np.arange(len(labels))
+    bars = ax.barh(y, high - low + 1.2, left=low, color=colors, height=0.55)
+    for bar, a in zip(bars, alphas):
+        bar.set_alpha(a)
+    for i, (lo, hi) in enumerate(zip(low, high)):
+        text = f"{lo}-{hi}%" if lo != hi else f"about {hi}%"
+        ax.text(hi + 3, i, text, va="center", color=INK, fontsize=11.5,
+                fontweight="bold")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=10.5)
+    ax.set_xlim(0, 100)
+    ax.set_xticks([0, 25, 50, 75, 100])
+    ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
+    ax.set_xlabel("fraction of the chip's peak arithmetic actually sustained")
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_title("The same kernel, measured on two chips")
+    save(fig, BLOG04, "fig-fa2-across-chips")
+
+
+def fig_work_units() -> None:
+    """Where the extra blocks come from: one head's query rows, cut up."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(11.6, 4.8))
+
+    for ax, split in zip(axes, (False, True)):
+        _blank(ax, (0, 16), (-3.0, 11.6))
+        ax.text(8, 10.7, "FlashAttention 2" if split else "FlashAttention 1",
+                ha="center", color=INK, fontsize=12.5, fontweight="bold")
+        ax.text(8, 9.7, "one head of one sequence, 8,192 query rows",
+                ha="center", color=MUTED, fontsize=10.5)
+
+        if split:
+            stripes = 16  # drawn count; the real one is 128
+            h = 8.0 / stripes
+            for i in range(stripes):
+                ax.add_patch(Rectangle((4.5, 0.9 + i * h + 0.04), 7.0, h - 0.08,
+                                       facecolor=COMPUTE_SOFT, edgecolor=COMPUTE))
+            ax.text(8, 0.1, "128 blocks, 64 query rows each",
+                    ha="center", va="top", color=COMPUTE, fontsize=11.5,
+                    fontweight="bold")
+            ax.text(8, -1.5, "128 multiprocessors can work on this one head at once",
+                    ha="center", va="top", color=MUTED, fontsize=10)
+        else:
+            ax.add_patch(Rectangle((4.5, 0.9), 7.0, 8.0,
+                                   facecolor=COMPUTE_SOFT, edgecolor=COMPUTE))
+            ax.text(8, 4.9, "1 block", ha="center", va="center", color=INK,
+                    fontsize=13, fontweight="bold")
+            ax.text(8, 0.1, "1 block, all 8,192 query rows",
+                    ha="center", va="top", color=COMPUTE, fontsize=11.5,
+                    fontweight="bold")
+            ax.text(8, -1.5, "one multiprocessor works through all 8,192 rows alone",
+                    ha="center", va="top", color=MUTED, fontsize=10)
+
+    fig.suptitle("Same work, cut into different numbers of pieces",
+                 fontsize=13.5, fontweight="bold", color=INK, y=1.03)
+    save(fig, BLOG04, "fig-work-units")
+
+
 BUILDERS: dict[str, list] = {
     "01": [
         fig_where_time_goes,
@@ -1274,6 +1469,13 @@ BUILDERS: dict[str, list] = {
         fig_online_softmax,
         fig_memory_traffic,
         fig_peak_fraction,
+    ],
+    "04": [
+        fig_scalar_exchange_rate,
+        fig_work_units,
+        fig_block_occupancy,
+        fig_warp_split,
+        fig_fa2_across_chips,
     ],
 }
 
