@@ -1435,6 +1435,190 @@ def fig_work_units() -> None:
     save(fig, BLOG04, "fig-work-units")
 
 
+BLOG05 = "inference-05-flashattention-3-and-4"
+
+# Hopper H100 and Blackwell B200, the two chips this post compares
+H100_BF16 = 989e12    # dense BF16 tensor-core peak, ops/s
+B200_BF16 = 2250e12   # dense BF16 tensor-core peak, ops/s
+
+
+def fig_warp_specialization() -> None:
+    """Loads and math in turn, against loads and math at the same time."""
+    sketch_style()
+    fig, axes = plt.subplots(2, 1, figsize=(11.4, 4.8))
+
+    load, math = MEMORY_SOFT, COMPUTE_SOFT
+    load_e, math_e = MEMORY, COMPUTE
+
+    # version 2: one lane, alternating
+    ax = axes[0]
+    _blank(ax, (0, 32), (-1.6, 3.4))
+    x = 1.0
+    for i in range(4):
+        ax.add_patch(Rectangle((x, 1.2), 2.6, 1.3, facecolor=load, edgecolor=load_e))
+        ax.text(x + 1.3, 1.85, "load", ha="center", va="center", color=INK, fontsize=9.5)
+        x += 2.8
+        ax.add_patch(Rectangle((x, 1.2), 4.2, 1.3, facecolor=math, edgecolor=math_e))
+        ax.text(x + 2.1, 1.85, "compute", ha="center", va="center", color=INK, fontsize=9.5)
+        x += 4.4
+    ax.text(0.6, 3.0, "FlashAttention 2: one lane, strictly in turn",
+            ha="left", color=INK, fontsize=12, fontweight="bold")
+    ax.text(x + 0.4, 1.85, "time", ha="left", va="center", color=MUTED, fontsize=10)
+
+    # version 3: two lanes, overlapped
+    ax = axes[1]
+    _blank(ax, (0, 32), (-1.6, 4.6))
+    for i in range(5):
+        lx = 1.0 + i * 4.2
+        ax.add_patch(Rectangle((lx, 2.6), 3.9, 1.1, facecolor=load, edgecolor=load_e))
+        ax.text(lx + 1.95, 3.15, "load", ha="center", va="center", color=INK, fontsize=9.5)
+    for i in range(4):
+        cx = 5.2 + i * 4.2
+        ax.add_patch(Rectangle((cx, 1.0), 3.9, 1.1, facecolor=math, edgecolor=math_e))
+        ax.text(cx + 1.95, 1.55, "compute", ha="center", va="center", color=INK, fontsize=9.5)
+    ax.text(0.6, 4.2, "FlashAttention 3: producer warps load, consumer warps compute",
+            ha="left", color=INK, fontsize=12, fontweight="bold")
+    ax.text(0.2, 3.15, "producers", ha="right", va="center", color=MUTED, fontsize=9.5)
+    ax.text(0.2, 1.55, "consumers", ha="right", va="center", color=MUTED, fontsize=9.5)
+    ax.text(30.0, -1.0,
+            "the same tiles, the same arithmetic, finished in less wall clock",
+            ha="right", va="center", color=MUTED, fontsize=10.5)
+
+    save(fig, BLOG05, "fig-warp-specialization")
+
+
+def fig_fp8_outliers() -> None:
+    """Where FP8's levels land depends on the widest value, not the common one."""
+    sketch_style()
+    fig, axes = plt.subplots(2, 1, figsize=(11.4, 5.0))
+
+    def bell(ax, centre, width, height, base):
+        xs = np.linspace(centre - width, centre + width, 120)
+        ys = base + height * np.exp(-0.5 * ((xs - centre) / (width / 2.6)) ** 2)
+        ax.fill_between(xs, base, ys, color=MEMORY_SOFT, edgecolor=MEMORY, lw=1.6)
+
+    n_levels = 25
+
+    # before: the scale is stretched by two far-out values
+    ax = axes[0]
+    _blank(ax, (-7.2, 7.2), (-1.5, 3.2))
+    ax.plot([-6.4, 6.4], [0, 0], color=MUTED, lw=1.4)
+    for x in np.linspace(-6.4, 6.4, n_levels):
+        ax.plot([x, x], [-0.22, 0.22], color=MUTED, lw=1.2)
+    bell(ax, 0.0, 1.05, 2.2, 0.0)
+    for x in (-5.4, 5.6):
+        ax.plot([x], [0.38], marker="o", color=COMPUTE, markersize=8)
+    ax.text(5.6, 1.0, "outliers", ha="center", color=COMPUTE, fontsize=10.5,
+            fontweight="bold")
+    ax.text(0, 2.9, "Before: the scale must reach the outliers",
+            ha="center", color=INK, fontsize=12, fontweight="bold")
+    ax.text(0, -1.1, "3 of the 25 levels land where almost every value actually is",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+
+    # after: a rotation spreads the loud coordinates thinly, so nothing is far out
+    ax = axes[1]
+    _blank(ax, (-7.2, 7.2), (-1.5, 3.2))
+    ax.plot([-2.6, 2.6], [0, 0], color=MUTED, lw=1.4)
+    for x in np.linspace(-2.6, 2.6, n_levels):
+        ax.plot([x, x], [-0.22, 0.22], color=MUTED, lw=1.2)
+    bell(ax, 0.0, 2.3, 2.2, 0.0)
+    ax.text(0, 2.9, "After a random rotation: nothing is far out",
+            ha="center", color=INK, fontsize=12, fontweight="bold")
+    ax.text(0, -1.1, "the same 25 levels now spread across the values that occur",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+
+    fig.suptitle("FP8 has a couple hundred levels; the widest value decides where they land",
+                 fontsize=13, fontweight="bold", color=INK, y=1.02)
+    save(fig, BLOG05, "fig-fp8-outliers")
+
+
+def fig_asymmetric_scaling() -> None:
+    """One engine got 2.25 times faster. Its neighbours did not move."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(8.8, 3.4))
+
+    parts = ["Tensor cores\nBF16 matmul", "Special function unit\nexponentials",
+             "Shared memory\nbandwidth"]
+    growth = [B200_BF16 / H100_BF16, 1.0, 1.0]
+    colors = [COMPUTE, MUTED, MUTED]
+
+    y = np.arange(len(parts))
+    bars = ax.barh(y, growth, color=colors, height=0.55)
+    bars[1].set_alpha(0.45)
+    bars[2].set_alpha(0.45)
+    for i, g in enumerate(growth):
+        ax.text(g + 0.04, i, f"{g:.2f}x", va="center", color=INK, fontsize=11.5,
+                fontweight="bold")
+
+    ax.axvline(1.0, color=DIVIDER, lw=1.2)
+    ax.set_yticks(y)
+    ax.set_yticklabels(parts, fontsize=10.5)
+    ax.set_xlim(0, 2.7)
+    ax.set_xlabel("growth from H100 to B200")
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_title("Asymmetric hardware scaling")
+    save(fig, BLOG05, "fig-asymmetric-scaling")
+
+
+def fig_exponential_gap() -> None:
+    """Per multiprocessor per cycle, the tensor cores outrun the exponentials 512 to 1."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(8.8, 3.2))
+
+    labels = ["Tensor cores\nBF16 ops", "Special function unit\nexponentials"]
+    vals = [8192, 16]
+    bars = ax.barh([0, 1], vals, color=[COMPUTE, MEMORY], height=0.5)
+    bars[1].set_alpha(0.9)
+    for i, v in enumerate(vals):
+        ax.text(v * 1.25, i, f"{v:,} per cycle", va="center", color=INK,
+                fontsize=11.5, fontweight="bold")
+
+    ax.set_xscale("log")
+    ax.set_xlim(8, 40000)
+    ax.set_yticks([0, 1])
+    ax.set_yticklabels(labels, fontsize=10.5)
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_xlabel("operations per multiprocessor per cycle, B200, log scale")
+    ax.set_title(f"The consumer is {8192 // 16} times faster than the producer")
+    save(fig, BLOG05, "fig-exponential-gap")
+
+
+def fig_fraction_vs_absolute() -> None:
+    """The fraction plateaued near three quarters; the work done did not."""
+    house_style()
+    fig, axes = plt.subplots(1, 2, figsize=(11.4, 3.6))
+
+    gens = ["FA1\nA100", "FA2\nA100", "FA3\nH100", "FA4\nB200"]
+    frac = [32.5, 61.5, 75, 71]  # midpoints of the reported ranges
+    absolute = [None, None, 740, 1605]  # measured ops/s, in trillions
+
+    ax = axes[0]
+    ax.plot(gens, frac, marker="o", color=COMPUTE, lw=2.4, markersize=8)
+    ax.set_ylim(0, 100)
+    ax.set_yticks([0, 25, 50, 75, 100])
+    ax.set_yticklabels(["0%", "25%", "50%", "75%", "100%"])
+    ax.set_title("Fraction of peak sustained", fontsize=12)
+    ax.text(2.5, 84, "plateau", ha="center", color=MUTED, fontsize=10.5)
+
+    ax = axes[1]
+    idx = [i for i, v in enumerate(absolute) if v is not None]
+    ax.bar([gens[i] for i in idx], [absolute[i] for i in idx],
+           color=COMPUTE, alpha=0.9, width=0.5)
+    for i in idx:
+        ax.text(gens[i], absolute[i] + 60, f"{absolute[i]:,}", ha="center",
+                color=INK, fontsize=11, fontweight="bold")
+    ax.set_ylim(0, 2000)
+    ax.set_ylabel("trillion ops/s, 16-bit")
+    ax.set_title("Work actually done", fontsize=12)
+    ax.set_xlim(-0.7, 1.7)
+
+    fig.suptitle("A flat fraction of a rising ceiling is still more arithmetic",
+                 fontsize=13, fontweight="bold", color=INK, y=1.05)
+    save(fig, BLOG05, "fig-fraction-vs-absolute")
+
+
 BUILDERS: dict[str, list] = {
     "01": [
         fig_where_time_goes,
@@ -1476,6 +1660,13 @@ BUILDERS: dict[str, list] = {
         fig_block_occupancy,
         fig_warp_split,
         fig_fa2_across_chips,
+    ],
+    "05": [
+        fig_warp_specialization,
+        fig_fp8_outliers,
+        fig_asymmetric_scaling,
+        fig_exponential_gap,
+        fig_fraction_vs_absolute,
     ],
 }
 

@@ -16,6 +16,7 @@ hosting (see [`BLOG_RULES.md`](./BLOG_RULES.md) §7).
 | 02 | Inside the GPU: Why Moving a Byte Costs More Than Multiplying One | [Source](./inference-02-inside-the-gpu/) | [Read](https://prathameshsaraf.com/blogs/inference-02-inside-the-gpu/) |
 | 03 | Kernels and FlashAttention: When the Same Math Runs 7.6x Faster | [Source](./inference-03-kernels-and-flashattention/) | [Read](https://prathameshsaraf.com/blogs/inference-03-kernels-and-flashattention/) |
 | 04 | FlashAttention 2: Three Places the Chip Was Still Waiting | [Source](./inference-04-flashattention-2/) | [Read](https://prathameshsaraf.com/blogs/inference-04-flashattention-2/) |
+| 05 | FlashAttention 3 and 4: When the Bottleneck Moves | [Source](./inference-05-flashattention-3-and-4/) | [Read](https://prathameshsaraf.com/blogs/inference-05-flashattention-3-and-4/) |
 
 ## Writing a new post
 
