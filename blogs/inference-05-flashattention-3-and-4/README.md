@@ -178,4 +178,4 @@ The three kernel generations in this post all optimized the same thing: the inte
 
 Every active request also keeps its keys and values there, the KV cache from [The Memory Wall](../inference-01-memory-wall/README.md). And the way serving systems laid that cache out wasted more than half of the most expensive memory in the machine, for a reason that looks entirely sensible until you count it: a system cannot know how long a response will run, so it reserved room for the longest one that might happen.
 
-The next post is about what that cost, and about borrowing a fifty-year-old idea from operating systems to fix it.
+The next post, [PagedAttention](../inference-06-paged-attention/README.md), is about what that cost, and about borrowing a fifty-year-old idea from operating systems to fix it.

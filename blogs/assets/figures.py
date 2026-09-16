@@ -1619,6 +1619,174 @@ def fig_fraction_vs_absolute() -> None:
     save(fig, BLOG05, "fig-fraction-vs-absolute")
 
 
+BLOG06 = "inference-06-paged-attention"
+
+
+def fig_reservation_waste() -> None:
+    """Reserve for the worst case and most of the reservation is never used."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(11.8, 4.6))
+
+    # internal: one reservation, mostly empty
+    ax = axes[0]
+    _blank(ax, (0, 12), (-2.6, 11.2))
+    ax.add_patch(Rectangle((4.0, 0.8), 4.0, 8.4, facecolor="none",
+                           edgecolor=MEMORY, ls="--"))
+    used = 8.4 * 200 / 4096
+    ax.add_patch(Rectangle((4.0, 0.8), 4.0, used, facecolor=MEMORY_SOFT,
+                           edgecolor=MEMORY))
+    ax.text(6.0, 9.9, "one reservation", ha="center", color=INK, fontsize=12,
+            fontweight="bold")
+    ax.text(8.5, 0.8 + used / 2, "200 tokens used", ha="left", va="center",
+            color=MEMORY, fontsize=10.5, fontweight="bold")
+    ax.text(8.5, 5.4, "3,896 slots\nreserved and empty", ha="left", va="center",
+            color=MUTED, fontsize=10.5)
+    ax.text(3.6, 5.0, "4,096\ntoken limit", ha="right", va="center", color=MUTED,
+            fontsize=10.5)
+    ax.text(6.0, -1.6, "internal fragmentation", ha="center", va="center",
+            color=COMPUTE, fontsize=11.5, fontweight="bold")
+
+    # external: the gaps between reservations go ragged
+    ax = axes[1]
+    _blank(ax, (0, 12), (-2.6, 11.2))
+    spans = [(0.8, 2.2), (3.6, 1.6), (6.4, 1.1), (8.6, 0.6)]
+    for y, h in spans:
+        ax.add_patch(Rectangle((1.2, y), 4.6, h, facecolor=MEMORY_SOFT,
+                               edgecolor=MEMORY))
+    ax.text(3.5, 9.9, "memory after a while", ha="center", color=INK, fontsize=12,
+            fontweight="bold")
+    # the holes left between reservations, drawn as holes rather than labelled
+    for y, h in [(3.0, 0.6), (5.2, 1.2), (7.5, 1.1)]:
+        ax.add_patch(Rectangle((1.2, y), 4.6, h, facecolor="none",
+                               edgecolor=DIVIDER, ls="--"))
+        ax.text(3.5, y + h / 2, "free", ha="center", va="center", color=MUTED,
+                fontsize=9.5)
+    ax.text(6.4, 6.4, "a new request fits in the\ntotal free space, but not\nin any single gap",
+            ha="left", va="center", color=MUTED, fontsize=10)
+    ax.text(3.5, -1.6, "external fragmentation", ha="center", va="center",
+            color=COMPUTE, fontsize=11.5, fontweight="bold")
+
+    save(fig, BLOG06, "fig-reservation-waste")
+
+
+def fig_block_table() -> None:
+    """One table turns scattered physical blocks into one logical sequence."""
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(12, 5.0))
+    _blank(ax, (0, 34), (-2.4, 11.6))
+
+    # what the kernel believes it is reading
+    ax.text(3.2, 10.4, "what the kernel sees", ha="center", color=INK,
+            fontsize=11.5, fontweight="bold")
+    for i in range(5):
+        y = 8.2 - i * 1.6
+        ax.add_patch(Rectangle((1.6, y), 3.2, 1.3, facecolor=MEMORY_SOFT,
+                               edgecolor=MEMORY))
+        ax.text(3.2, y + 0.65, f"block {i}", ha="center", va="center", color=INK,
+                fontsize=10)
+    ax.text(3.2, -0.9, "one contiguous sequence", ha="center", va="top",
+            color=MUTED, fontsize=10)
+
+    # the indirection
+    ax.text(11.4, 10.4, "block table", ha="center", color=INK, fontsize=11.5,
+            fontweight="bold")
+    ax.add_patch(Rectangle((8.2, 0.4), 6.4, 9.2, facecolor="none", edgecolor=DIVIDER))
+    phys = [10, 43, 61, 24, 52]
+    for i, blk in enumerate(phys):
+        y = 8.2 - i * 1.6
+        ax.text(9.0, y + 0.65, f"{i}", ha="left", va="center", color=MUTED,
+                fontsize=10)
+        ax.text(13.8, y + 0.65, f"blk-{blk}", ha="right", va="center", color=INK,
+                fontsize=10)
+        ax.annotate("", xy=(8.0, y + 0.65), xytext=(5.0, y + 0.65),
+                    arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.2))
+
+    # where the bytes actually are
+    ax.text(25.4, 10.4, "HBM", ha="center", color=INK, fontsize=11.5,
+            fontweight="bold")
+    cols, rows = 7, 6
+    live = {(0, 2), (2, 5), (3, 1), (4, 6), (5, 3)}
+    for r in range(rows):
+        for c in range(cols):
+            on = (r, c) in live
+            ax.add_patch(Rectangle((17.6 + c * 1.6, 0.6 + (rows - 1 - r) * 1.5),
+                                   1.35, 1.25,
+                                   facecolor=MEMORY_SOFT if on else "none",
+                                   edgecolor=MEMORY if on else DIVIDER))
+    ax.text(25.4, -0.9, "the same five blocks, wherever they happened to fit",
+            ha="center", va="top", color=MUTED, fontsize=10)
+
+    ax.text(17, -2.1,
+            "every free block is the same size, so any free block will do",
+            ha="center", va="center", color=COMPUTE, fontsize=11,
+            fontweight="bold")
+    save(fig, BLOG06, "fig-block-table")
+
+
+def fig_cache_utilization() -> None:
+    """How much of the most expensive memory in the machine held anything."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(8.8, 3.2))
+
+    labels = ["Before paging\nreserve for the limit", "With paging\n16-token blocks"]
+    low = np.array([20.4, 96.2])
+    high = np.array([38.2, 96.2])
+
+    y = np.arange(len(labels))
+    bars = ax.barh(y, np.maximum(high - low, 1.2), left=low,
+                   color=[MUTED, COMPUTE], height=0.5)
+    bars[0].set_alpha(0.55)
+    ax.text(high[0] + 2.5, 0, "20.4-38.2%", va="center", color=INK, fontsize=11.5,
+            fontweight="bold")
+    ax.text(high[1] + 2.5, 1, "about 96%", va="center", color=INK, fontsize=11.5,
+            fontweight="bold")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=10.5)
+    ax.set_xlim(0, 115)
+    ax.set_xticks([0, 25, 50, 75, 100])
+    ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
+    ax.set_xlabel("share of KV cache memory actually holding token states")
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_title("More than half of it was storing nothing")
+    save(fig, BLOG06, "fig-cache-utilization")
+
+
+def fig_cache_levers() -> None:
+    """The architectural lever: how much each token has to store at all."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(9.4, 3.6))
+
+    # elements cached per token per layer, so two models can sit on one axis
+    labels = [
+        "Llama-3-70B\nfull multi-head",
+        "Llama-3-70B\ngrouped, 8 groups",
+        "DeepSeek-V2\nfull multi-head",
+        "DeepSeek-V2\nlatent",
+    ]
+    vals = [2 * 64 * 128, 2 * 8 * 128, 2 * 128 * 128, 576]
+    colors = [MUTED, MEMORY, MUTED, MEMORY]
+
+    y = np.arange(len(labels))
+    bars = ax.barh(y, vals, color=colors, height=0.55)
+    for b in (bars[0], bars[2]):
+        b.set_alpha(0.5)
+    for i, v in enumerate(vals):
+        ax.text(v * 1.15, i, f"{v:,}", va="center", color=INK, fontsize=11,
+                fontweight="bold")
+
+    ax.set_xscale("log")
+    ax.set_xlim(300, 150000)
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=10)
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_xlabel("elements cached per token per layer, log scale")
+    ax.set_title("Grouping divides the head count; compression replaces it")
+    save(fig, BLOG06, "fig-cache-levers")
+
+
 BUILDERS: dict[str, list] = {
     "01": [
         fig_where_time_goes,
@@ -1667,6 +1835,12 @@ BUILDERS: dict[str, list] = {
         fig_asymmetric_scaling,
         fig_exponential_gap,
         fig_fraction_vs_absolute,
+    ],
+    "06": [
+        fig_reservation_waste,
+        fig_block_table,
+        fig_cache_utilization,
+        fig_cache_levers,
     ],
 }
 
