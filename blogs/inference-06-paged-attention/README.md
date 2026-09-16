@@ -173,4 +173,4 @@ Shrinking the cache does not change how the cache is read, and at decode the rea
 
 The parallelism [FlashAttention 2](../inference-04-flashattention-2/README.md) relied on was splitting query rows into blocks so the whole chip has work. At decode the query is a **single new token**, one row, so the query dimension contributes exactly one block. The block count collapses to batch size times head count, and a chip with 132 multiprocessors goes hungry again for exactly the reason version 2 was supposed to have fixed.
 
-The next post is about getting decode to fill a chip: splitting the work along the sequence instead, and then removing the launch overhead that starts to dominate once each kernel has so little to do.
+The next post, [Flash Decoding](../inference-07-flash-decoding/README.md), is about getting decode to fill a chip: splitting the work along the sequence instead, and then removing the launch overhead that starts to dominate once each kernel has so little to do.

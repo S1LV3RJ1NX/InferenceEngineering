@@ -1787,6 +1787,151 @@ def fig_cache_levers() -> None:
     save(fig, BLOG06, "fig-cache-levers")
 
 
+BLOG07 = "inference-07-flash-decoding"
+
+H100_SMS = 132
+
+
+def fig_decode_block_collapse() -> None:
+    """Prefill has thousands of blocks to hand out. Decode has almost none."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.4))
+
+    cols, rows = 12, 11  # 132 cells, one per H100 multiprocessor
+    for ax, live, title, note in (
+        (axes[0], H100_SMS, "Prefill", "thousands of blocks, more than enough to go around"),
+        (axes[1], 32, "Decode, one request", "batch 1 x 32 heads = 32 blocks"),
+    ):
+        _blank(ax, (-0.6, cols + 0.6), (-2.6, rows + 1.6))
+        for r in range(rows):
+            for c in range(cols):
+                on = r * cols + c < live
+                ax.add_patch(Rectangle((c + 0.08, rows - 1 - r + 0.08), 0.84, 0.84,
+                                       facecolor=COMPUTE_SOFT if on else "none",
+                                       edgecolor=COMPUTE if on else DIVIDER))
+        ax.text(cols / 2, rows + 0.9, title, ha="center", color=INK, fontsize=12.5,
+                fontweight="bold")
+        idle = H100_SMS - live
+        ax.text(cols / 2, -0.8, f"{live} of {H100_SMS} multiprocessors busy",
+                ha="center", color=COMPUTE, fontsize=11.5, fontweight="bold")
+        tail = note if idle == 0 else f"{note}, so {idle} stand idle"
+        ax.text(cols / 2, -1.8, tail, ha="center", color=MUTED, fontsize=10)
+
+    fig.suptitle("The query at decode is a single row, so it contributes one block",
+                 fontsize=13.5, fontweight="bold", color=INK, y=1.02)
+    save(fig, BLOG07, "fig-decode-block-collapse")
+
+
+def fig_flash_decoding_split() -> None:
+    """Split the one dimension nobody had split: the cache itself."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12.2, 4.6))
+
+    # before: one worker walks the whole cache
+    ax = axes[0]
+    _blank(ax, (0, 20), (-2.6, 10.4))
+    ax.add_patch(Rectangle((2.0, 1.4), 15.0, 2.4, facecolor=MEMORY_SOFT,
+                           edgecolor=MEMORY))
+    ax.text(9.5, 2.6, "the whole cached sequence", ha="center", va="center",
+            color=INK, fontsize=11)
+    ax.add_patch(Rectangle((2.0, 6.4), 2.6, 1.8, facecolor=COMPUTE_SOFT,
+                           edgecolor=COMPUTE))
+    ax.text(3.3, 7.3, "1 SM", ha="center", va="center", color=INK, fontsize=10.5)
+    ax.annotate("", xy=(16.4, 4.4), xytext=(3.3, 6.2),
+                arrowprops=dict(arrowstyle="->", color=COMPUTE, lw=1.6))
+    ax.text(9.5, 9.5, "One worker, tile after tile", ha="center", color=INK,
+            fontsize=12, fontweight="bold")
+    ax.text(9.5, -1.4, "the longer the context, the longer the serial walk",
+            ha="center", va="center", color=MUTED, fontsize=10.5)
+
+    # after: chunks in parallel, then one merge
+    ax = axes[1]
+    _blank(ax, (0, 20), (-2.6, 10.4))
+    for i in range(5):
+        x = 2.0 + i * 3.1
+        ax.add_patch(Rectangle((x, 1.4), 2.8, 2.4, facecolor=MEMORY_SOFT,
+                               edgecolor=MEMORY))
+        ax.add_patch(Rectangle((x + 0.3, 5.0), 2.2, 1.5, facecolor=COMPUTE_SOFT,
+                               edgecolor=COMPUTE))
+        ax.text(x + 1.4, 5.75, "SM", ha="center", va="center", color=INK, fontsize=9.5)
+        # each worker reads its own chunk, then hands a partial result upward
+        ax.annotate("", xy=(x + 1.4, 4.9), xytext=(x + 1.4, 3.9),
+                    arrowprops=dict(arrowstyle="->", color=COMPUTE, lw=1.4))
+        ax.annotate("", xy=(9.5, 7.3), xytext=(x + 1.4, 6.6),
+                    arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0))
+    ax.add_patch(Rectangle((6.6, 7.4), 5.8, 1.3, facecolor="none", edgecolor=MUTED))
+    ax.text(9.5, 8.05, "merge kernel", ha="center", va="center", color=INK,
+            fontsize=10.5, fontweight="bold")
+    ax.text(9.5, 9.5, "One worker per chunk, all at once", ha="center", color=INK,
+            fontsize=12, fontweight="bold")
+    ax.text(9.5, -1.4,
+            "each chunk keeps its own running max and sum; the merge rescales them onto one scale",
+            ha="center", va="center", color=MUTED, fontsize=9.5)
+
+    save(fig, BLOG07, "fig-flash-decoding-split")
+
+
+def fig_launch_overhead() -> None:
+    """At batch one the gaps between kernels are the same size as the kernels."""
+    sketch_style()
+    fig, axes = plt.subplots(2, 1, figsize=(11.4, 4.2))
+
+    ax = axes[0]
+    _blank(ax, (0, 34), (-1.4, 3.0))
+    x = 1.0
+    for i in range(7):
+        ax.add_patch(Rectangle((x, 1.0), 2.6, 1.3, facecolor=COMPUTE_SOFT,
+                               edgecolor=COMPUTE))
+        x += 2.6
+        ax.add_patch(Rectangle((x, 1.0), 1.5, 1.3, facecolor="none",
+                               edgecolor=MUTED, ls="--"))
+        x += 1.6
+    ax.text(0.6, 2.7, "One kernel at a time: the GPU waits for the CPU between each",
+            ha="left", color=INK, fontsize=11.5, fontweight="bold")
+    ax.text(x + 0.4, 1.65, "time", ha="left", va="center", color=MUTED, fontsize=10)
+    ax.text(17, -0.9, "dashed gaps are launch overhead, 20 to 30% of the step at batch 1",
+            ha="center", va="center", color=MUTED, fontsize=10)
+
+    ax = axes[1]
+    _blank(ax, (0, 34), (-1.6, 3.0))
+    x = 1.0
+    ax.add_patch(Rectangle((x, 1.0), 1.5, 1.3, facecolor="none", edgecolor=MUTED,
+                           ls="--"))
+    x += 1.6
+    for i in range(7):
+        ax.add_patch(Rectangle((x, 1.0), 2.6, 1.3, facecolor=COMPUTE_SOFT,
+                               edgecolor=COMPUTE))
+        x += 2.7
+    ax.text(0.6, 2.7, "Graph replay: one call dispatches the whole recorded sequence",
+            ha="left", color=INK, fontsize=11.5, fontweight="bold")
+    ax.text(x + 0.4, 1.65, "time", ha="left", va="center", color=COMPUTE,
+            fontsize=10, fontweight="bold")
+
+    save(fig, BLOG07, "fig-launch-overhead")
+
+
+def fig_decode_speedup() -> None:
+    """Reported gains, which land at long context and small batch."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(8.8, 3.0))
+
+    labels = ["The attention operation", "End-to-end decoding"]
+    vals = [50, 8]
+    bars = ax.barh([0, 1], vals, color=[MEMORY, COMPUTE], height=0.5)
+    for i, v in enumerate(vals):
+        ax.text(v + 1.2, i, f"up to {v}x", va="center", color=INK, fontsize=11.5,
+                fontweight="bold")
+
+    ax.set_yticks([0, 1])
+    ax.set_yticklabels(labels, fontsize=11)
+    ax.set_xlim(0, 60)
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.set_xlabel("speedup over unsplit FlashAttention, CodeLlama 34B at long context")
+    ax.set_title("Where the gain lands")
+    save(fig, BLOG07, "fig-decode-speedup")
+
+
 BUILDERS: dict[str, list] = {
     "01": [
         fig_where_time_goes,
@@ -1841,6 +1986,12 @@ BUILDERS: dict[str, list] = {
         fig_block_table,
         fig_cache_utilization,
         fig_cache_levers,
+    ],
+    "07": [
+        fig_decode_block_collapse,
+        fig_flash_decoding_split,
+        fig_launch_overhead,
+        fig_decode_speedup,
     ],
 }
 

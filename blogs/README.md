@@ -18,6 +18,7 @@ hosting (see [`BLOG_RULES.md`](./BLOG_RULES.md) §7).
 | 04 | FlashAttention 2: Three Places the Chip Was Still Waiting | [Source](./inference-04-flashattention-2/) | [Read](https://prathameshsaraf.com/blogs/inference-04-flashattention-2/) |
 | 05 | FlashAttention 3 and 4: When the Bottleneck Moves | [Source](./inference-05-flashattention-3-and-4/) | [Read](https://prathameshsaraf.com/blogs/inference-05-flashattention-3-and-4/) |
 | 06 | PagedAttention: The Cache Was Storing Nothing | [Source](./inference-06-paged-attention/) | [Read](https://prathameshsaraf.com/blogs/inference-06-paged-attention/) |
+| 07 | Flash Decoding and CUDA Graphs: Filling a Chip One Token at a Time | [Source](./inference-07-flash-decoding/) | [Read](https://prathameshsaraf.com/blogs/inference-07-flash-decoding/) |
 
 ## Writing a new post
 
