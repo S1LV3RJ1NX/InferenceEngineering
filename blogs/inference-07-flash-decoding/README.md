@@ -150,4 +150,4 @@ It follows the same logic as everything else. Wall-clock time tracks bytes moved
 
 Yet FlashAttention 4's headline numbers still run in 16-bit BF16, and the reason is that **accuracy gives out before the hardware floor is reached.** Even at 8 bits, holding the error down took everything [FlashAttention 3](../inference-05-flashattention-3-and-4/README.md) brought to bear: a separate scale for every block, and outliers scattered through random rotations.
 
-So lower precision is faster, but accuracy fails first. Navigating between those two facts is a discipline of its own, called quantization, and that is where this series goes next.
+So lower precision is faster, but accuracy fails first. Navigating between those two facts is a discipline of its own, called [Quantization](../inference-08-quantization/README.md), and that is where this series goes next.

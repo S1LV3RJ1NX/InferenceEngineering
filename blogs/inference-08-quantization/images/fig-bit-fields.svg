@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="606.3264pt" height="299.187pt" viewBox="0 0 606.3264 299.187" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-18T23:44:21.285058</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 299.187 
+L 606.3264 299.187 
+L 606.3264 0 
+L 0 0 
+z
+" style="fill: #fafafa"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 18.8064 291.987 
+L 599.1264 291.987 
+L 599.1264 25.875 
+L 18.8064 25.875 
+z
+" style="fill: #fafafa"/>
+   </g>
+   <g id="matplotlib.axis_1"/>
+   <g id="matplotlib.axis_2"/>
+   <g id="patch_3">
+    <path d="M 130.4064 86.067 
+L 141.5664 86.067 
+L 141.5664 65.1582 
+L 130.4064 65.1582 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #0a0a0a; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 141.5664 86.067 
+L 230.8464 86.067 
+L 230.8464 65.1582 
+L 141.5664 65.1582 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #4e7784; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 230.8464 86.067 
+L 487.5264 86.067 
+L 487.5264 65.1582 
+L 230.8464 65.1582 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #b5734e; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 130.4064 117.747 
+L 141.5664 117.747 
+L 141.5664 96.8382 
+L 130.4064 96.8382 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #0a0a0a; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 141.5664 117.747 
+L 230.8464 117.747 
+L 230.8464 96.8382 
+L 141.5664 96.8382 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #4e7784; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 230.8464 117.747 
+L 342.4464 117.747 
+L 342.4464 96.8382 
+L 230.8464 96.8382 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #b5734e; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 130.4064 149.427 
+L 141.5664 149.427 
+L 141.5664 128.5182 
+L 130.4064 128.5182 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #0a0a0a; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 141.5664 149.427 
+L 197.3664 149.427 
+L 197.3664 128.5182 
+L 141.5664 128.5182 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #4e7784; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 197.3664 149.427 
+L 308.9664 149.427 
+L 308.9664 128.5182 
+L 197.3664 128.5182 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #b5734e; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 130.4064 181.107 
+L 141.5664 181.107 
+L 141.5664 160.1982 
+L 130.4064 160.1982 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #0a0a0a; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 141.5664 181.107 
+L 230.8464 181.107 
+L 230.8464 160.1982 
+L 141.5664 160.1982 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #4e7784; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 230.8464 181.107 
+L 308.9664 181.107 
+L 308.9664 160.1982 
+L 230.8464 160.1982 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #b5734e; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 130.4064 212.787 
+L 141.5664 212.787 
+L 141.5664 191.8782 
+L 130.4064 191.8782 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #0a0a0a; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 141.5664 212.787 
+L 186.2064 212.787 
+L 186.2064 191.8782 
+L 141.5664 191.8782 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #4e7784; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 186.2064 212.787 
+L 219.6864 212.787 
+L 219.6864 191.8782 
+L 186.2064 191.8782 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #b5734e; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 130.4064 244.467 
+L 141.5664 244.467 
+L 141.5664 223.5582 
+L 130.4064 223.5582 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #0a0a0a; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 141.5664 244.467 
+L 197.3664 244.467 
+L 197.3664 223.5582 
+L 141.5664 223.5582 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #4e7784; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 197.3664 244.467 
+L 219.6864 244.467 
+L 219.6864 223.5582 
+L 197.3664 223.5582 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #b5734e; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 130.4064 276.147 
+L 141.5664 276.147 
+L 141.5664 255.2382 
+L 130.4064 255.2382 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #0a0a0a; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 141.5664 276.147 
+L 219.6864 276.147 
+L 219.6864 255.2382 
+L 141.5664 255.2382 
+z
+" clip-path="url(#p5c6bd7ae19)" style="fill: #b5734e; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="186.2064" y="79.4026" transform="rotate(-0 186.2064 79.4026)">8</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="359.1864" y="79.4026" transform="rotate(-0 359.1864 79.4026)">23</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 11.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #0a0a0a" x="121.1064" y="79.9711" transform="rotate(-0 121.1064 79.9711)">FP32</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #525252" x="494.9664" y="79.3076" transform="rotate(-0 494.9664 79.3076)">32 bits</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="186.2064" y="111.0826" transform="rotate(-0 186.2064 111.0826)">8</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="286.6464" y="111.0826" transform="rotate(-0 286.6464 111.0826)">10</text>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 11.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #0a0a0a" x="121.1064" y="111.6511" transform="rotate(-0 121.1064 111.6511)">TF32</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #525252" x="349.8864" y="110.9876" transform="rotate(-0 349.8864 110.9876)">19 bits</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="169.4664" y="142.7626" transform="rotate(-0 169.4664 142.7626)">5</text>
+   </g>
+   <g id="text_10">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="253.1664" y="142.7626" transform="rotate(-0 253.1664 142.7626)">10</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 11.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #0a0a0a" x="121.1064" y="143.3311" transform="rotate(-0 121.1064 143.3311)">FP16</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #525252" x="316.4064" y="142.6676" transform="rotate(-0 316.4064 142.6676)">16 bits</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="186.2064" y="174.4426" transform="rotate(-0 186.2064 174.4426)">8</text>
+   </g>
+   <g id="text_14">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="269.9064" y="174.4426" transform="rotate(-0 269.9064 174.4426)">7</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 11.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #0a0a0a" x="121.1064" y="175.0111" transform="rotate(-0 121.1064 175.0111)">BF16</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #525252" x="316.4064" y="174.3476" transform="rotate(-0 316.4064 174.3476)">16 bits</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="163.8864" y="206.1226" transform="rotate(-0 163.8864 206.1226)">4</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="202.9464" y="206.1226" transform="rotate(-0 202.9464 206.1226)">3</text>
+   </g>
+   <g id="text_19">
+    <text style="font-weight: 700; font-size: 11.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #0a0a0a" x="121.1064" y="206.6911" transform="rotate(-0 121.1064 206.6911)">FP8 E4M3</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #525252" x="227.1264" y="206.0276" transform="rotate(-0 227.1264 206.0276)">8 bits</text>
+   </g>
+   <g id="text_21">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="169.4664" y="237.8026" transform="rotate(-0 169.4664 237.8026)">5</text>
+   </g>
+   <g id="text_22">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="208.5264" y="237.8026" transform="rotate(-0 208.5264 237.8026)">2</text>
+   </g>
+   <g id="text_23">
+    <text style="font-weight: 700; font-size: 11.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #0a0a0a" x="121.1064" y="238.3711" transform="rotate(-0 121.1064 238.3711)">FP8 E5M2</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #525252" x="227.1264" y="237.7076" transform="rotate(-0 227.1264 237.7076)">8 bits</text>
+   </g>
+   <g id="text_25">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #ffffff" x="180.6264" y="269.4826" transform="rotate(-0 180.6264 269.4826)">7</text>
+   </g>
+   <g id="text_26">
+    <text style="font-weight: 700; font-size: 11.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #0a0a0a" x="121.1064" y="270.0511" transform="rotate(-0 121.1064 270.0511)">INT8</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 10px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #525252" x="227.1264" y="269.3876" transform="rotate(-0 227.1264 269.3876)">8 bits</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 9.5px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; fill: #0a0a0a" transform="translate(139.49665 49.635) rotate(-90)">sign</text>
+   </g>
+   <g id="text_29">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #4e7784" x="212.2464" y="52.803" transform="rotate(-0 212.2464 52.803)">exponent = range</text>
+   </g>
+   <g id="text_30">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #b5734e" x="353.6064" y="52.803" transform="rotate(-0 353.6064 52.803)">mantissa = precision</text>
+   </g>
+   <g id="text_31">
+    <text style="font-weight: 700; font-size: 13px; font-family: 'Geist', 'Inter', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #0a0a0a" x="7.2" y="19.875" transform="rotate(-0 7.2 19.875)">Every format below FP32 throws away bits from one field or the other</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p5c6bd7ae19">
+   <rect x="18.8064" y="25.875" width="580.32" height="266.112"/>
+  </clipPath>
+ </defs>
+</svg>

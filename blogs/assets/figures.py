@@ -1932,6 +1932,229 @@ def fig_decode_speedup() -> None:
     save(fig, BLOG07, "fig-decode-speedup")
 
 
+BLOG08 = "inference-08-quantization"
+
+# desaturated tones for the bit-field diagram, so the semantic teal/terracotta
+# pair is not spent on a chart where neither means compute or memory
+EXP_C = "#4E7784"
+MANT_C = "#B5734E"
+
+
+def fig_bit_fields() -> None:
+    """What each format spends its bits on, drawn to scale by total width."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(10.4, 4.8))
+
+    # name, exponent bits, mantissa bits, integer (INT formats)
+    fmts = [
+        ("FP32", 8, 23, False),
+        ("TF32", 8, 10, False),
+        ("FP16", 5, 10, False),
+        ("BF16", 8, 7, False),
+        ("FP8 E4M3", 4, 3, False),
+        ("FP8 E5M2", 5, 2, False),
+        ("INT8", 0, 7, True),
+    ]
+    unit = 0.30
+    h = 0.66
+    for row, (name, exp, mant, is_int) in enumerate(fmts):
+        y = len(fmts) - 1 - row
+        x = 0.0
+        ax.add_patch(Rectangle((x, y), unit, h, facecolor=INK, edgecolor="white"))
+        x += unit
+        if exp:
+            ax.add_patch(Rectangle((x, y), exp * unit, h, facecolor=EXP_C,
+                                   edgecolor="white"))
+            ax.text(x + exp * unit / 2, y + h / 2, str(exp), ha="center",
+                    va="center", color="white", fontsize=10, fontweight="bold")
+            x += exp * unit
+        label = "integer" if is_int else "mantissa"
+        ax.add_patch(Rectangle((x, y), mant * unit, h, facecolor=MANT_C,
+                               edgecolor="white"))
+        ax.text(x + mant * unit / 2, y + h / 2, str(mant), ha="center",
+                va="center", color="white", fontsize=10, fontweight="bold")
+        x += mant * unit
+        total = 1 + exp + mant
+        ax.text(-0.25, y + h / 2, name, ha="right", va="center", color=INK,
+                fontsize=11.5, fontweight="bold")
+        ax.text(x + 0.2, y + h / 2, f"{total} bits", ha="left", va="center",
+                color=MUTED, fontsize=10)
+
+    ax.text(0.15, len(fmts) + 0.15, "sign", color=INK, fontsize=9.5, rotation=90,
+            va="bottom", ha="center")
+    ax.text(2.2, len(fmts) + 0.05, "exponent = range", color=EXP_C, fontsize=11,
+            fontweight="bold")
+    ax.text(6.0, len(fmts) + 0.05, "mantissa = precision", color=MANT_C,
+            fontsize=11, fontweight="bold")
+
+    _blank(ax, (-3.0, 12.6), (-0.5, len(fmts) + 0.9))
+    ax.set_title("Every format below FP32 throws away bits from one field or the other",
+                 fontsize=13, fontweight="bold", color=INK, loc="left", x=-0.02)
+    save(fig, BLOG08, "fig-bit-fields")
+
+
+def fig_float_spacing() -> None:
+    """Floats crowd their resolution near zero, exactly where weights live."""
+    sketch_style()
+    fig, ax = plt.subplots(figsize=(11, 4.8))
+    _blank(ax, (-9.8, 9.5), (-2.6, 6.0))
+
+    ax.text(-9.6, 5.6, "Floats are a logarithmic ruler; integers are a linear one",
+            ha="left", va="center", color=INK, fontsize=13, fontweight="bold")
+
+    # a bell of weights, hugging zero
+    xs = np.linspace(-8, 8, 240)
+    bell = 1.5 * np.exp(-0.5 * (xs / 1.1) ** 2)
+    ax.fill_between(xs, 2.6, 2.6 + bell, color=MEMORY_SOFT, edgecolor=MEMORY,
+                    lw=1.4)
+    ax.text(0, 4.5, "where a trained network's weights actually sit",
+            ha="center", color=MEMORY, fontsize=10.5, fontweight="bold")
+
+    # float ticks: powers of two with mantissa steps, both signs
+    floats = []
+    for e in range(-4, 4):
+        base = 2.0 ** e
+        for m in range(4):
+            floats.append(base * (1 + m / 4))
+    floats = sorted(set(floats + [-f for f in floats] + [0.0]))
+    ax.plot([-8.2, 8.2], [1.4, 1.4], color=MUTED, lw=1.2)
+    for f in floats:
+        if -8.2 <= f <= 8.2:
+            ax.plot([f, f], [1.2, 1.6], color=MANT_C, lw=1.3)
+    ax.text(-8.7, 1.4, "float", ha="right", va="center", color=INK, fontsize=11,
+            fontweight="bold")
+
+    # integer ticks: evenly spaced
+    ints = np.linspace(-8, 8, 17)
+    ax.plot([-8.2, 8.2], [-0.4, -0.4], color=MUTED, lw=1.2)
+    for i in ints:
+        ax.plot([i, i], [-0.6, -0.2], color=EXP_C, lw=1.3)
+    ax.text(-8.7, -0.4, "integer", ha="right", va="center", color=INK,
+            fontsize=11, fontweight="bold")
+
+    ax.text(0, -1.6,
+            "same tick budget: floats spend it near zero, integers spread it evenly",
+            ha="center", color=MUTED, fontsize=10.5)
+    save(fig, BLOG08, "fig-float-spacing")
+
+
+def fig_outlier_channels() -> None:
+    """A few activation channels run far hotter than the rest, and one scale must reach them."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(10.2, 3.8))
+
+    rng = np.random.default_rng(7)
+    n = 48
+    mags = np.abs(rng.normal(0, 0.22, n)) + 0.05
+    outliers = [7, 15, 23, 30, 38, 44]
+    for c in outliers:
+        mags[c] = rng.uniform(70, 130)
+
+    colors = [COMPUTE if i in outliers else MEMORY for i in range(n)]
+    ax.bar(range(n), mags, color=colors, width=0.82)
+    ax.set_yscale("log")
+    ax.set_ylim(0.02, 400)
+    ax.set_xlim(-1, n)
+    ax.set_xlabel("activation channel (the same positions in every token's vector)")
+    ax.set_ylabel("magnitude, log scale")
+    ax.set_xticks([])
+
+    ax.axhline(mags.max(), ls=":", lw=1.3, color=COMPUTE)
+    ax.text(n - 1, mags.max() * 1.15, "one shared scale must reach up here",
+            ha="right", color=COMPUTE, fontsize=10.5, fontweight="bold")
+    ax.text(1, 0.5, "so everything ordinary collapses into the bottom few steps",
+            ha="left", color=MUTED, fontsize=10.5)
+    ax.set_title("Outlier features: about 0.1% of channels, running ~100x hotter")
+    ax.grid(axis="x", visible=False)
+    save(fig, BLOG08, "fig-outlier-channels")
+
+
+def fig_roofline_slide() -> None:
+    """Quantization slides a workload right; only the memory-bound side gains."""
+    house_style()
+    fig, ax = plt.subplots(figsize=(9.2, 5.2))
+
+    ai = np.logspace(-1, 4, 400)
+    roof = np.minimum(H100_BW * ai, H100_FLOPS)
+    ax.fill_between(ai, 1e11, roof, where=ai <= RIDGE, color=MEMORY, alpha=0.10, lw=0)
+    ax.fill_between(ai, 1e11, roof, where=ai >= RIDGE, color=COMPUTE, alpha=0.10, lw=0)
+    ax.plot(ai[ai <= RIDGE], H100_BW * ai[ai <= RIDGE], lw=2.6, color=MEMORY)
+    ax.plot(ai[ai >= RIDGE], np.full((ai >= RIDGE).sum(), H100_FLOPS), lw=2.6,
+            color=COMPUTE)
+    ax.axvline(RIDGE, ls=":", lw=1.4, color=MUTED)
+    ax.annotate(f"ridge · {RIDGE:.0f} ops/byte", xy=(RIDGE, 2e11),
+                xytext=(RIDGE * 1.4, 1.5e11), color=INK, fontsize=10.5)
+
+    # decode slides right along the rising bandwidth roof: pure speedup
+    ax.annotate("", xy=(4, H100_BW * 4), xytext=(1, H100_BW * 1),
+                arrowprops=dict(arrowstyle="->", color=MEMORY, lw=2.4))
+    ax.plot([1], [H100_BW], "o", ms=10, color=MEMORY)
+    ax.text(0.42, H100_BW * 5.5, "DECODE\nfewer bytes, slides right\nunder the roof: pure speedup",
+            color=MEMORY, fontsize=10.5, fontweight="bold")
+
+    # prefill already on the flat roof: sliding right buys nothing
+    ax.annotate("", xy=(4000, H100_FLOPS), xytext=(1000, H100_FLOPS),
+                arrowprops=dict(arrowstyle="->", color=COMPUTE, lw=2.4))
+    ax.plot([1000], [H100_FLOPS], "o", ms=10, color=COMPUTE)
+    ax.text(360, 1.4e14, "PREFILL\nalready on the ceiling\nfewer bytes buy almost nothing",
+            color=COMPUTE, fontsize=10.5, fontweight="bold")
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(0.1, 1e4)
+    ax.set_ylim(1e11, 3e15)
+    ax.set_xlabel("arithmetic intensity (ops per byte)")
+    ax.set_ylabel("achievable performance (FLOP/s)")
+    ax.set_title("Quantization pushes right on the roofline")
+    save(fig, BLOG08, "fig-roofline-slide")
+
+
+def fig_strategy_split() -> None:
+    """Two bottlenecks, two schemes: shrink the weights, or shrink both sides."""
+    sketch_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.4))
+
+    def operand(ax, x, y, w, label, bits, color):
+        ax.add_patch(Rectangle((x, y), w, 1.6, facecolor=color, edgecolor=INK))
+        ax.text(x + w / 2, y + 0.95, label, ha="center", va="center", color=INK,
+                fontsize=12, fontweight="bold")
+        ax.text(x + w / 2, y + 0.4, bits, ha="center", va="center", color=INK,
+                fontsize=9.5)
+
+    # W4A16: only the weight shrinks; aimed at memory-bound decode
+    ax = axes[0]
+    _blank(ax, (0, 16), (-2.4, 6.2))
+    operand(ax, 1.0, 2.0, 2.0, "W", "4-bit", COMPUTE_SOFT)
+    ax.text(3.6, 2.8, "x", ha="center", va="center", color=MUTED, fontsize=14)
+    operand(ax, 4.4, 2.0, 4.0, "A", "16-bit", MEMORY_SOFT)
+    ax.annotate("", xy=(13.4, 2.8), xytext=(8.8, 2.8),
+                arrowprops=dict(arrowstyle="->", color=INK, lw=1.6))
+    ax.text(11.0, 3.4, "fewer bytes\nfrom HBM", ha="center", va="center",
+            color=INK, fontsize=10.5)
+    ax.text(8, 5.4, "W4A16", ha="center", color=INK, fontsize=13, fontweight="bold")
+    ax.text(8, -1.4, "shrinks the weights only · attacks memory-bound decode · win is bandwidth",
+            ha="center", va="center", color=MUTED, fontsize=10)
+
+    # W8A8 / W4A4: both sides low; unlocks low-precision tensor cores
+    ax = axes[1]
+    _blank(ax, (0, 16), (-2.4, 6.2))
+    operand(ax, 1.6, 2.0, 2.6, "W", "8 or 4-bit", COMPUTE_SOFT)
+    ax.text(4.7, 2.8, "x", ha="center", va="center", color=MUTED, fontsize=14)
+    operand(ax, 5.2, 2.0, 2.6, "A", "8 or 4-bit", COMPUTE_SOFT)
+    ax.annotate("", xy=(13.8, 2.8), xytext=(8.2, 2.8),
+                arrowprops=dict(arrowstyle="->", color=COMPUTE, lw=2.0))
+    ax.text(11.0, 3.5, "~2x tensor-core\nthroughput", ha="center", va="center",
+            color=COMPUTE, fontsize=10.5, fontweight="bold")
+    ax.text(8, 5.4, "W8A8 or W4A4", ha="center", color=INK, fontsize=13,
+            fontweight="bold")
+    ax.text(8, -1.4, "shrinks both sides · attacks compute-bound prefill · win is arithmetic",
+            ha="center", va="center", color=MUTED, fontsize=10)
+
+    fig.suptitle("The bottleneck decides which side of the multiply to shrink",
+                 fontsize=13.5, fontweight="bold", color=INK, y=1.02)
+    save(fig, BLOG08, "fig-strategy-split")
+
+
 BUILDERS: dict[str, list] = {
     "01": [
         fig_where_time_goes,
@@ -1992,6 +2215,13 @@ BUILDERS: dict[str, list] = {
         fig_flash_decoding_split,
         fig_launch_overhead,
         fig_decode_speedup,
+    ],
+    "08": [
+        fig_bit_fields,
+        fig_float_spacing,
+        fig_outlier_channels,
+        fig_roofline_slide,
+        fig_strategy_split,
     ],
 }
 
